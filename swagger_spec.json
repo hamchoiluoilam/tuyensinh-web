@@ -1,0 +1,1663 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Hệ Thống Tuyển Sinh & Tư Vấn Nhập Học Trực Tuyến",
+    "description": "Đồ án Web Python 3 Phân hệ: M02 (Tuyển sinh) + M07 (Tài chính - Lệ phí) + M12 (Hỗ trợ người học)",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Xác thực & Tài khoản"
+        ],
+        "summary": "Register Student",
+        "description": "[Thí sinh] Đăng ký tài khoản học sinh bằng Email",
+        "operationId": "register_student_api_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRegister"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Xác thực & Tài khoản"
+        ],
+        "summary": "Login Student",
+        "description": "[Thí sinh] Đăng nhập bằng Email và Mật khẩu",
+        "operationId": "login_student_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/admin-login": {
+      "post": {
+        "tags": [
+          "Xác thực & Tài khoản"
+        ],
+        "summary": "Login Admin",
+        "description": "[Cán bộ] Đăng nhập Cổng Quản Trị",
+        "operationId": "login_admin_api_auth_admin_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Xác thực & Tài khoản"
+        ],
+        "summary": "Logout",
+        "description": "Đăng xuất tài khoản",
+        "operationId": "logout_api_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admissions/majors": {
+      "get": {
+        "tags": [
+          "M02 - Tuyển sinh (Người 1)"
+        ],
+        "summary": "Get Majors",
+        "description": "Lấy danh sách các ngành tuyển sinh và chỉ tiêu",
+        "operationId": "get_majors_api_admissions_majors_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MajorOut"
+                  },
+                  "type": "array",
+                  "title": "Response Get Majors Api Admissions Majors Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admissions/majors/{major_id}": {
+      "get": {
+        "tags": [
+          "M02 - Tuyển sinh (Người 1)"
+        ],
+        "summary": "Get Major Detail",
+        "description": "[Chi tiết ngành] Xem thông tin ngành và danh sách các môn học đào tạo",
+        "operationId": "get_major_detail_api_admissions_majors__major_id__get",
+        "parameters": [
+          {
+            "name": "major_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Major Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MajorDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admissions/apply": {
+      "post": {
+        "tags": [
+          "M02 - Tuyển sinh (Người 1)"
+        ],
+        "summary": "Submit Application",
+        "description": "[Thí sinh] Nộp hồ sơ xét tuyển trực tuyến.\nTự động sinh mã hồ sơ TS2026-XXXX và liên kết lệ phí mặc định.",
+        "operationId": "submit_application_api_admissions_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admissions/applications": {
+      "get": {
+        "tags": [
+          "M02 - Tuyển sinh (Người 1)"
+        ],
+        "summary": "List Applications",
+        "description": "[Cán bộ Admin] Xem và lọc danh sách hồ sơ tuyển sinh",
+        "operationId": "list_applications_api_admissions_applications_get",
+        "parameters": [
+          {
+            "name": "major_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Major Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Keyword"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationOut"
+                  },
+                  "title": "Response List Applications Api Admissions Applications Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admissions/lookup/{identifier}": {
+      "get": {
+        "tags": [
+          "M02 - Tuyển sinh (Người 1)"
+        ],
+        "summary": "Lookup Application",
+        "description": "[Thí sinh] Tra cứu trạng thái hồ sơ theo Mã hồ sơ hoặc CCCD",
+        "operationId": "lookup_application_api_admissions_lookup__identifier__get",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admissions/applications/{app_id}/status": {
+      "patch": {
+        "tags": [
+          "M02 - Tuyển sinh (Người 1)"
+        ],
+        "summary": "Update Application Status",
+        "description": "[Cán bộ Admin] Duyệt hồ sơ (HOP_LE hoặc TU_CHOI)",
+        "operationId": "update_application_status_api_admissions_applications__app_id__status_patch",
+        "parameters": [
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "App Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admissions/run-virtual-filtering": {
+      "post": {
+        "tags": [
+          "M02 - Tuyển sinh (Người 1)"
+        ],
+        "summary": "Run Virtual Filtering",
+        "description": "[Cán bộ Admin] THUẬT TOÁN LỌC ẢO & XÉT TRÚNG TUYỂN\n- Lấy các hồ sơ đã duyệt HOP_LE và ĐÃ THANH TOÁN LỆ PHÍ (liên kết M07).\n- Sắp xếp điểm xét tuyển từ cao xuống thấp.\n- Lấy top N thí sinh theo đúng chỉ tiêu (quota) của ngành -> Set TRUNG_TUYEN.\n- Điểm của thí sinh thứ N chính là điểm chuẩn (benchmark_score).\n- Các thí sinh còn lại set KHONG_TRUNG_TUYEN.",
+        "operationId": "run_virtual_filtering_api_admissions_run_virtual_filtering_post",
+        "parameters": [
+          {
+            "name": "major_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Major Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/fee-configs": {
+      "get": {
+        "tags": [
+          "M07 - Tài chính kế toán (Người 2)"
+        ],
+        "summary": "Get Fee Configs",
+        "description": "[Kế toán / Thí sinh] Xem biểu phí xét tuyển hiện hành",
+        "operationId": "get_fee_configs_api_finance_fee_configs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/transactions": {
+      "get": {
+        "tags": [
+          "M07 - Tài chính kế toán (Người 2)"
+        ],
+        "summary": "List Transactions",
+        "description": "[Cán bộ Kế toán] Xem toàn bộ giao dịch đóng lệ phí",
+        "operationId": "list_transactions_api_finance_transactions_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentOut"
+                  },
+                  "title": "Response List Transactions Api Finance Transactions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/transaction/{tx_code}": {
+      "get": {
+        "tags": [
+          "M07 - Tài chính kế toán (Người 2)"
+        ],
+        "summary": "Get Transaction By Code",
+        "description": "Tra cứu chi tiết một giao dịch thanh toán kèm mã QR giả lập",
+        "operationId": "get_transaction_by_code_api_finance_transaction__tx_code__get",
+        "parameters": [
+          {
+            "name": "tx_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tx Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/simulate-pay/{tx_code}": {
+      "post": {
+        "tags": [
+          "M07 - Tài chính kế toán (Người 2)"
+        ],
+        "summary": "Simulate Payment",
+        "description": "[Giả lập Cổng Thanh toán / Thí sinh] Xác nhận thanh toán thành công\nCập nhật trạng thái sang 'PAID' và ghi nhận thời gian nộp tiền.",
+        "operationId": "simulate_payment_api_finance_simulate_pay__tx_code__post",
+        "parameters": [
+          {
+            "name": "tx_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tx Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finance/revenue-summary": {
+      "get": {
+        "tags": [
+          "M07 - Tài chính kế toán (Người 2)"
+        ],
+        "summary": "Get Revenue Summary",
+        "description": "[Cán bộ Kế toán / Ban Giám hiệu] Dashboard thống kê doanh thu lệ phí",
+        "operationId": "get_revenue_summary_api_finance_revenue_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/support/faqs": {
+      "get": {
+        "tags": [
+          "M12 - Hỗ trợ người học (Người 3)"
+        ],
+        "summary": "Get Faqs",
+        "description": "[Thí sinh / Cán bộ] Xem danh mục câu hỏi thường gặp FAQ",
+        "operationId": "get_faqs_api_support_faqs_get",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FAQOut"
+                  },
+                  "title": "Response Get Faqs Api Support Faqs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/support/tickets": {
+      "post": {
+        "tags": [
+          "M12 - Hỗ trợ người học (Người 3)"
+        ],
+        "summary": "Create Support Ticket",
+        "description": "[Thí sinh] Gửi phiếu yêu cầu hỗ trợ / giải đáp thắc mắc tuyển sinh.\nTự sinh mã phiếu hỗ trợ TK-XXXX.",
+        "operationId": "create_support_ticket_api_support_tickets_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "M12 - Hỗ trợ người học (Người 3)"
+        ],
+        "summary": "List Tickets",
+        "description": "[Cán bộ Tư vấn] Danh sách các phiếu yêu cầu trợ giúp",
+        "operationId": "list_tickets_api_support_tickets_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TicketOut"
+                  },
+                  "title": "Response List Tickets Api Support Tickets Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/support/tickets/lookup/{code}": {
+      "get": {
+        "tags": [
+          "M12 - Hỗ trợ người học (Người 3)"
+        ],
+        "summary": "Lookup Ticket",
+        "description": "[Thí sinh] Tra cứu tiến độ giải quyết ticket theo mã phiếu",
+        "operationId": "lookup_ticket_api_support_tickets_lookup__code__get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/support/tickets/{ticket_id}/reply": {
+      "patch": {
+        "tags": [
+          "M12 - Hỗ trợ người học (Người 3)"
+        ],
+        "summary": "Reply Ticket",
+        "description": "[Cán bộ Tư vấn] Trả lời giải đáp cho thí sinh và chuyển trạng thái sang RESOLVED",
+        "operationId": "reply_ticket_api_support_tickets__ticket_id__reply_patch",
+        "parameters": [
+          {
+            "name": "ticket_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Ticket Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketReply"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/support/stats": {
+      "get": {
+        "tags": [
+          "M12 - Hỗ trợ người học (Người 3)"
+        ],
+        "summary": "Get Support Stats",
+        "description": "Thống kê tình hình tiếp nhận và hỗ trợ người học",
+        "operationId": "get_support_stats_api_support_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApplicationCreate": {
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "id_card": {
+            "type": "string",
+            "title": "Id Card"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "major_id": {
+            "type": "integer",
+            "title": "Major Id"
+          },
+          "proof_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proof Url"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "full_name",
+          "id_card",
+          "email",
+          "phone",
+          "method",
+          "score",
+          "major_id"
+        ],
+        "title": "ApplicationCreate"
+      },
+      "ApplicationOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "app_code": {
+            "type": "string",
+            "title": "App Code"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "id_card": {
+            "type": "string",
+            "title": "Id Card"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "major_id": {
+            "type": "integer",
+            "title": "Major Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "proof_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proof Url"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "app_code",
+          "full_name",
+          "id_card",
+          "email",
+          "phone",
+          "method",
+          "score",
+          "status",
+          "major_id",
+          "user_id",
+          "proof_url",
+          "created_at"
+        ],
+        "title": "ApplicationOut"
+      },
+      "ApplicationStatusUpdate": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ApplicationStatusUpdate"
+      },
+      "FAQOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "question",
+          "answer"
+        ],
+        "title": "FAQOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MajorDetailOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category",
+            "default": "Chung"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "quota": {
+            "type": "integer",
+            "title": "Quota"
+          },
+          "benchmark_score": {
+            "type": "number",
+            "title": "Benchmark Score"
+          },
+          "subjects": {
+            "items": {
+              "$ref": "#/components/schemas/SubjectOut"
+            },
+            "type": "array",
+            "title": "Subjects",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "description",
+          "quota",
+          "benchmark_score"
+        ],
+        "title": "MajorDetailOut"
+      },
+      "MajorOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category",
+            "default": "Chung"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "quota": {
+            "type": "integer",
+            "title": "Quota"
+          },
+          "benchmark_score": {
+            "type": "number",
+            "title": "Benchmark Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "description",
+          "quota",
+          "benchmark_score"
+        ],
+        "title": "MajorOut"
+      },
+      "PaymentOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "tx_code": {
+            "type": "string",
+            "title": "Tx Code"
+          },
+          "application_id": {
+            "type": "integer",
+            "title": "Application Id"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "qr_payload": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qr Payload"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tx_code",
+          "application_id",
+          "amount",
+          "method",
+          "status",
+          "qr_payload",
+          "paid_at",
+          "created_at"
+        ],
+        "title": "PaymentOut"
+      },
+      "SubjectOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "credits": {
+            "type": "integer",
+            "title": "Credits"
+          },
+          "semester": {
+            "type": "integer",
+            "title": "Semester"
+          },
+          "subject_type": {
+            "type": "string",
+            "title": "Subject Type"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "credits",
+          "semester",
+          "subject_type",
+          "description"
+        ],
+        "title": "SubjectOut"
+      },
+      "TicketCreate": {
+        "properties": {
+          "sender_name": {
+            "type": "string",
+            "title": "Sender Name"
+          },
+          "sender_email": {
+            "type": "string",
+            "format": "email",
+            "title": "Sender Email"
+          },
+          "sender_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Phone"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "application_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sender_name",
+          "sender_email",
+          "category",
+          "subject",
+          "message"
+        ],
+        "title": "TicketCreate"
+      },
+      "TicketOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "ticket_code": {
+            "type": "string",
+            "title": "Ticket Code"
+          },
+          "sender_name": {
+            "type": "string",
+            "title": "Sender Name"
+          },
+          "sender_email": {
+            "type": "string",
+            "title": "Sender Email"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "ticket_code",
+          "sender_name",
+          "sender_email",
+          "category",
+          "subject",
+          "message",
+          "reply",
+          "status",
+          "created_at",
+          "resolved_at"
+        ],
+        "title": "TicketOut"
+      },
+      "TicketReply": {
+        "properties": {
+          "reply": {
+            "type": "string",
+            "title": "Reply"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "title": "TicketReply"
+      },
+      "UserLogin": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "UserLogin"
+      },
+      "UserOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "full_name",
+          "phone",
+          "role",
+          "created_at"
+        ],
+        "title": "UserOut"
+      },
+      "UserRegister": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "full_name"
+        ],
+        "title": "UserRegister"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

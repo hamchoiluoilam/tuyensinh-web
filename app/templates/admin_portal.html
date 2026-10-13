@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}Cổng Quản Trị Tuyển Sinh (Admin Portal){% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1 text-danger"><i class="bi bi-shield-lock-fill"></i> Trung Tâm Quản Trị Tuyển Sinh (Admin)</h2>
+        <p class="text-muted mb-0">Điều hành 3 phân hệ: M02 Tuyển sinh & Lọc ảo | M07 Kế toán & Lệ phí | M12 Tư vấn hỗ trợ</p>
+    </div>
+    <div>
+        <a href="/logout" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Đăng xuất Admin</a>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-primary border-4">
+            <div class="text-muted small">Tổng hồ sơ đăng ký</div>
+            <h3 class="fw-bold mb-0 text-primary">{{ applications|length }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-success border-4">
+            <div class="text-muted small">Đã nộp lệ phí</div>
+            <h3 class="fw-bold mb-0 text-success">{{ paid_count }} / {{ total_count }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-warning border-4">
+            <div class="text-muted small">Tổng thu lệ phí (VNĐ)</div>
+            <h3 class="fw-bold mb-0 text-warning">{{ "{:,.0f}".format(revenue) }} đ</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-info border-4">
+            <div class="text-muted small">Phiếu hỗ trợ (Tickets)</div>
+            <h3 class="fw-bold mb-0 text-info">{{ tickets|length }}</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Nav Tabs for 3 Modules -->
+<ul class="nav nav-tabs mb-4 fw-semibold" id="adminTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active px-4 py-2" id="tab-adm-m02" data-bs-toggle="tab" data-bs-target="#pane-m02">
+            <i class="bi bi-mortarboard-fill text-primary"></i> Phân Hệ M02: Tuyển Sinh & Lọc Ảo
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link px-4 py-2" id="tab-adm-m07" data-bs-toggle="tab" data-bs-target="#pane-m07">
+            <i class="bi bi-wallet2 text-success"></i> Phân Hệ M07: Kế Toán & Lệ Phí
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link px-4 py-2" id="tab-adm-m12" data-bs-toggle="tab" data-bs-target="#pane-m12">
+            <i class="bi bi-headset text-info"></i> Phân Hệ M12: Giải Đáp & Ticket
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="adminTabsContent">
+    
+    <!-- PANE 1: M02 TUYỂN SINH -->
+    <div class="tab-pane fade show active" id="pane-m02">
+        <!-- Card Lọc ảo -->
+        <div class="card card-custom p-4 mb-4 bg-light">
+            <h5 class="fw-bold text-primary mb-2"><i class="bi bi-cpu-fill"></i> THUẬT TOÁN LỌC ẢO & XÉT ĐIỂM CHUẨN</h5>
+            <p class="text-muted small mb-3">
+                Thuật toán sẽ tự động lấy các thí sinh có hồ sơ <strong>HOP_LE</strong> và <strong>ĐÃ ĐÓNG LỆ PHÍ</strong>, 
+                sắp xếp điểm từ cao xuống thấp và cắt điểm chuẩn theo đúng chỉ tiêu của ngành.
+            </p>
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <select id="filterMajorId" class="form-select">
+                        {% for m in majors %}
+                        <option value="{{ m.id }}">{{ m.name }} (Chỉ tiêu: {{ m.quota }} | Điểm chuẩn hiện tại: {{ m.benchmark_score }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary fw-bold w-100" onclick="triggerVirtualFilter()">
+                        <i class="bi bi-play-circle-fill"></i> Chạy Lọc Ảo Ngay
+                    </button>
+                </div>
+            </div>
+            <div id="filterResultAlert" class="mt-3 d-none"></div>
+        </div>
+
+        <!-- Bảng 40 Ngành Đào Tạo & Chỉ Tiêu -->
+        <div class="card card-custom p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-card-checklist text-primary"></i> Quản Lý Dữ Liệu 40 Ngành Đào Tạo & Chỉ Tiêu Tuyển Sinh</h5>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#majorsCollapse">
+                    <i class="bi bi-chevron-down"></i> Mở/Đóng Bảng 40 Ngành
+                </button>
+            </div>
+            <div class="collapse show" id="majorsCollapse">
+                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Mã Ngành</th>
+                                <th>Tên Ngành</th>
+                                <th>Khối Ngành</th>
+                                <th>Chỉ Tiêu</th>
+                                <th>Điểm Chuẩn</th>
+                                <th>Chi Tiết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in majors %}
+                            <tr>
+                                <td><code>{{ m.code }}</code></td>
+                                <td><strong>{{ m.name }}</strong></td>
+                                <td><span class="badge bg-light text-dark border">{{ m.category }}</span></td>
+                                <td><span class="badge bg-primary">{{ m.quota }} chỉ tiêu</span></td>
+                                <td><span class="badge bg-danger">{{ m.benchmark_score }}</span></td>
+                                <td><a href="/majors/{{ m.id }}" target="_blank" class="btn btn-sm btn-outline-info py-0">Xem môn học</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bảng danh sách hồ sơ -->
+        <div class="card card-custom p-3">
+            <h5 class="fw-bold mb-3">Danh Sách Toàn Bộ Hồ Sơ Xét Tuyển ({{ applications|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã HS</th>
+                            <th>Họ Tên</th>
+                            <th>CCCD</th>
+                            <th>Ngành</th>
+                            <th>Điểm</th>
+                            <th>Lệ Phí (M07)</th>
+                            <th>Trạng Thái</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in applications %}
+                        <tr>
+                            <td><strong>{{ app.app_code }}</strong></td>
+                            <td>{{ app.full_name }}</td>
+                            <td>{{ app.id_card }}</td>
+                            <td><span class="badge bg-secondary">{{ app.major.code }}</span> {{ app.major.name }}</td>
+                            <td><span class="fw-bold text-primary fs-6">{{ app.score }}</span></td>
+                            <td>
+                                {% if app.payment and app.payment.status == 'PAID' %}
+                                    <span class="badge bg-success">Đã Đóng</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Chưa Nộp</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if app.status == 'CHO_DUYET' %}
+                                    <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                                {% elif app.status == 'HOP_LE' %}
+                                    <span class="badge bg-primary">Hợp Lệ</span>
+                                {% elif app.status == 'TRUNG_TUYEN' %}
+                                    <span class="badge bg-success fw-bold">TRÚNG TUYỂN</span>
+                                {% elif app.status == 'KHONG_TRUNG_TUYEN' %}
+                                    <span class="badge bg-secondary">Không Trúng Tuyển</span>
+                                {% else %}
+                                    <span class="badge bg-dark">{{ app.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-success" onclick="reviewApp({{ app.id }}, 'HOP_LE')">Duyệt Hợp Lệ</button>
+                                    <button class="btn btn-outline-danger" onclick="reviewApp({{ app.id }}, 'TU_CHOI')">Từ Chối</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANE 2: M07 TÀI CHÍNH KẾ TOÁN -->
+    <div class="tab-pane fade" id="pane-m07">
+        <div class="card card-custom p-3 mb-4">
+            <h5 class="fw-bold text-success mb-3"><i class="bi bi-cash-stack"></i> Sổ Giao Dịch Lệ Phí Tuyển Sinh ({{ transactions|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã GD</th>
+                            <th>Mã Hồ Sơ</th>
+                            <th>Thí Sinh</th>
+                            <th>Số Tiền</th>
+                            <th>Phương Thức</th>
+                            <th>Trạng Thái</th>
+                            <th>Thời Gian Thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                        <tr>
+                            <td><code>{{ tx.tx_code }}</code></td>
+                            <td><strong>{{ tx.application.app_code }}</strong></td>
+                            <td>{{ tx.application.full_name }}</td>
+                            <td class="fw-bold text-danger">{{ "{:,.0f}".format(tx.amount) }} đ</td>
+                            <td><span class="badge bg-light text-dark border">{{ tx.method }}</span></td>
+                            <td>
+                                {% if tx.status == 'PAID' %}
+                                    <span class="badge bg-success">PAID</span>
+                                {% else %}
+                                    <span class="badge bg-danger">UNPAID</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ tx.paid_at.strftime('%H:%M %d/%m/%Y') if tx.paid_at else '---' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANE 3: M12 TƯ VẤN HỖ TRỢ -->
+    <div class="tab-pane fade" id="pane-m12">
+        <div class="card card-custom p-3">
+            <h5 class="fw-bold text-info mb-3"><i class="bi bi-ticket-detailed"></i> Danh Sách Phiếu Hỗ Trợ / Yêu Cầu Tư Vấn ({{ tickets|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã Ticket</th>
+                            <th>Người Gửi</th>
+                            <th>Chủ Đề</th>
+                            <th>Nội Dung Thắc Mắc</th>
+                            <th>Phản Hồi Cán Bộ</th>
+                            <th>Trạng Thái</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tk in tickets %}
+                        <tr>
+                            <td><code>{{ tk.ticket_code }}</code></td>
+                            <td>
+                                <strong>{{ tk.sender_name }}</strong><br>
+                                <small class="text-muted">{{ tk.sender_email }}</small>
+                            </td>
+                            <td><span class="badge bg-info text-dark">{{ tk.category }}</span></td>
+                            <td style="max-width: 250px;">{{ tk.message }}</td>
+                            <td style="max-width: 250px;">
+                                {% if tk.reply %}
+                                    <span class="text-success small">{{ tk.reply }}</span>
+                                {% else %}
+                                    <span class="text-muted fst-italic small">Chưa có</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if tk.status == 'RESOLVED' %}
+                                    <span class="badge bg-success">RESOLVED</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">PENDING</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="openReplyModal({{ tk.id }}, '{{ tk.ticket_code }}', '{{ tk.message | escape }}')">
+                                    <i class="bi bi-reply"></i> Trả lời
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal Trả Lời Ticket -->
+<div class="modal fade" id="replyModal" tabindex="-1">
+    <div class="dialog modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Phản Hồi Phiếu Hỗ Trợ: <span id="modalTkCode"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted small">Nội dung câu hỏi của thí sinh:</label>
+                    <p id="modalTkMsg" class="p-2 bg-light rounded text-dark"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nội dung giải đáp của cán bộ (*):</label>
+                    <textarea id="modalReplyText" class="form-control" rows="4" placeholder="Nhập câu trả lời hướng dẫn thí sinh..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="submitReply()">Gửi Phản Hồi</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// --- Duyệt hồ sơ ---
+async function reviewApp(appId, status) {
+    if (!confirm(`Bạn có chắc chắn muốn duyệt hồ sơ này là [${status}]?`)) return;
+    try {
+        const res = await fetch(`/api/admissions/applications/${appId}/status`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: status})
+        });
+        if (res.ok) {
+            location.reload();
+        } else {
+            alert("Lỗi khi duyệt hồ sơ!");
+        }
+    } catch(e) {
+        alert("Lỗi kết nối!");
+    }
+}
+
+// --- Kích hoạt thuật toán lọc ảo (M02) ---
+async function triggerVirtualFilter() {
+    const majorId = document.getElementById('filterMajorId').value;
+    const alertBox = document.getElementById('filterResultAlert');
+    alertBox.className = "alert alert-info mt-3";
+    alertBox.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Đang chạy thuật toán lọc ảo và tính điểm chuẩn...';
+    alertBox.classList.remove('d-none');
+
+    try {
+        const res = await fetch(`/api/admissions/run-virtual-filtering?major_id=${majorId}`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+            alertBox.className = "alert alert-success mt-3";
+            alertBox.innerHTML = `
+                <h6 class="fw-bold mb-1"><i class="bi bi-check2-all"></i> ${data.message}</h6>
+                <div>- Số thí sinh hợp lệ & đã đóng lệ phí: <strong>${data.total_eligible}</strong></div>
+                <div>- Số thí sinh trúng tuyển (theo chỉ tiêu ${data.quota}): <strong>${data.passed_count}</strong></div>
+                <div>- Điểm chuẩn trúng tuyển xác định: <strong class="text-danger fs-5">${data.benchmark_score}</strong></div>
+            `;
+            setTimeout(() => { location.reload(); }, 2500);
+        } else {
+            alertBox.className = "alert alert-danger mt-3";
+            alertBox.textContent = data.detail || "Lỗi khi chạy lọc ảo!";
+        }
+    } catch(e) {
+        alertBox.className = "alert alert-danger mt-3";
+        alertBox.textContent = "Lỗi kết nối máy chủ!";
+    }
+}
+
+// --- Trả lời Ticket (M12) ---
+let currentTicketId = null;
+let replyModalObj = null;
+
+function openReplyModal(id, code, msg) {
+    currentTicketId = id;
+    document.getElementById('modalTkCode').textContent = code;
+    document.getElementById('modalTkMsg').textContent = msg;
+    document.getElementById('modalReplyText').value = "";
+    replyModalObj = new bootstrap.Modal(document.getElementById('replyModal'));
+    replyModalObj.show();
+}
+
+async function submitReply() {
+    const replyText = document.getElementById('modalReplyText').value.trim();
+    if (!replyText) {
+        alert("Vui lòng nhập nội dung giải đáp!");
+        return;
+    }
+    try {
+        const res = await fetch(`/api/support/tickets/${currentTicketId}/reply`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({reply: replyText})
+        });
+        if (res.ok) {
+            replyModalObj.hide();
+            alert("Đã gửi phản hồi cho thí sinh!");
+            location.reload();
+        } else {
+            alert("Lỗi khi phản hồi ticket!");
+        }
+    } catch(e) {
+        alert("Lỗi kết nối!");
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Đăng Nhập Quản Trị Viên (Admin) - Cổng Tuyển Sinh 2026{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-5">
+        <div class="card card-custom p-4 border-top border-danger border-4">
+            <div class="text-center mb-4">
+                <i class="bi bi-shield-lock-fill fs-1 text-danger"></i>
+                <h3 class="fw-bold text-dark mt-2">Cổng Đăng Nhập Quản Trị</h3>
+                <p class="text-muted small">Dành cho Cán bộ Hội đồng Tuyển sinh, Kế toán và Ban Tư vấn</p>
+            </div>
+
+            <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Email Cán bộ (*)</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-envelope-at"></i></span>
+                        <input type="email" id="admin_email" class="form-control" required placeholder="admin@tuyensinh.edu.vn">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Mật khẩu (*)</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-key"></i></span>
+                        <input type="password" id="admin_password" class="form-control" required placeholder="Nhập mật khẩu quản trị">
+                    </div>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-danger btn-lg fw-bold" id="btnAdminLogin">
+                        <i class="bi bi-shield-check"></i> Xác Thực & Vào Trang Quản Trị
+                    </button>
+                </div>
+            </form>
+
+            <div id="adminLoginAlert" class="mt-3 d-none"></div>
+
+            <div class="alert alert-light border mt-4 small text-muted">
+                <strong><i class="bi bi-shield-exclamation"></i> Tài khoản Quản trị viên mặc định:</strong><br>
+                • Email: <code>admin@tuyensinh.edu.vn</code><br>
+                • Mật khẩu: <code>admin123</code>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function handleAdminLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnAdminLogin');
+    const alertBox = document.getElementById('adminLoginAlert');
+    btn.disabled = true;
+
+    const payload = {
+        email: document.getElementById('admin_email').value.trim(),
+        password: document.getElementById('admin_password').value
+    };
+
+    try {
+        const res = await fetch('/api/auth/admin-login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alertBox.className = "alert alert-success mt-3";
+            alertBox.textContent = "Xác thực Quản trị thành công! Đang chuyển hướng...";
+            alertBox.classList.remove('d-none');
+            setTimeout(() => {
+                window.location.href = '/admin';
+            }, 800);
+        } else {
+            alertBox.className = "alert alert-danger mt-3";
+            alertBox.textContent = data.detail || "Đăng nhập thất bại!";
+            alertBox.classList.remove('d-none');
+        }
+    } catch(err) {
+        alertBox.className = "alert alert-danger mt-3";
+        alertBox.textContent = "Lỗi kết nối máy chủ!";
+        alertBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

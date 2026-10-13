@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block title %}Cổng Thí Sinh Cá Nhân - UniAdmission 2026{% endblock %}
+
+{% block content %}
+<!-- Header User Profile -->
+<div class="card card-custom p-4 bg-white border-start border-primary border-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-primary text-white rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                <i class="bi bi-person-fill fs-3"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-0 text-dark">Xin chào, {{ user.full_name }}</h4>
+                <div class="text-muted small">
+                    <i class="bi bi-envelope"></i> {{ user.email }} | <i class="bi bi-telephone"></i> {{ user.phone or 'Chưa cập nhật' }}
+                </div>
+            </div>
+        </div>
+        <div>
+            <a href="/logout" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-box-arrow-right"></i> Đăng xuất
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Cột trái: Tab điều hướng -->
+    <div class="col-lg-3 mb-4">
+        <div class="card card-custom p-3 bg-white">
+            <h6 class="fw-bold text-muted text-uppercase mb-3 px-2">Menu Phân Hệ</h6>
+            <div class="nav flex-column nav-pills gap-1" id="v-pills-tab" role="tablist">
+                <button class="nav-link active text-start py-3" id="tab-my-apps" data-bs-toggle="pill" data-bs-target="#content-my-apps">
+                    <i class="bi bi-folder-check me-2"></i> Hồ sơ của tôi ({{ my_applications|length }})
+                </button>
+                <button class="nav-link text-start py-3" id="tab-apply" data-bs-toggle="pill" data-bs-target="#content-apply">
+                    <i class="bi bi-file-earmark-plus me-2"></i> Nộp hồ sơ mới (M02)
+                </button>
+                <button class="nav-link text-start py-3" id="tab-pay" data-bs-toggle="pill" data-bs-target="#content-pay">
+                    <i class="bi bi-qr-code-scan me-2"></i> Đóng lệ phí QR (M07)
+                </button>
+                <button class="nav-link text-start py-3" id="tab-support" data-bs-toggle="pill" data-bs-target="#content-support">
+                    <i class="bi bi-headset me-2"></i> Hỗ trợ & Ticket (M12)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cột phải: Nội dung từng Tab -->
+    <div class="col-lg-9">
+        <div class="tab-content" id="v-pills-tabContent">
+            
+            <!-- TAB 0: HỒ SƠ CỦA TÔI -->
+            <div class="tab-pane fade show active" id="content-my-apps">
+                <div class="card card-custom p-4 bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="fw-bold text-primary mb-0"><i class="bi bi-folder-check"></i> Danh Sách Hồ Sơ Của Bạn</h4>
+                        <button class="btn btn-sm btn-primary" onclick="switchToApplyTab()">
+                            <i class="bi bi-plus-circle"></i> Đăng Ký Thêm Nguyện Vọng
+                        </button>
+                    </div>
+
+                    {% if my_applications|length == 0 %}
+                        <div class="alert alert-info py-4 text-center">
+                            <i class="bi bi-info-circle fs-3"></i>
+                            <p class="mt-2 mb-2">Bạn chưa nộp hồ sơ xét tuyển nào vào trường.</p>
+                            <button class="btn btn-primary btn-sm fw-bold" onclick="switchToApplyTab()">Nộp hồ sơ ngay bây giờ &raquo;</button>
+                        </div>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mã Hồ Sơ</th>
+                                        <th>Ngành Xét Tuyển</th>
+                                        <th>Điểm</th>
+                                        <th>Trạng Thái Hồ Sơ</th>
+                                        <th>Lệ Phí (M07)</th>
+                                        <th>Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for app in my_applications %}
+                                    <tr>
+                                        <td><strong>{{ app.app_code }}</strong></td>
+                                        <td>
+                                            <strong>{{ app.major.name }}</strong><br>
+                                            <span class="badge bg-secondary font-monospace">{{ app.major.code }}</span>
+                                        </td>
+                                        <td><span class="badge bg-warning text-dark fs-6">{{ app.score }}</span></td>
+                                        <td>
+                                            {% if app.status == 'CHO_DUYET' %}
+                                                <span class="badge bg-warning text-dark">Chờ xét duyệt</span>
+                                            {% elif app.status == 'HOP_LE' %}
+                                                <span class="badge bg-primary">Hồ sơ Hợp Lệ</span>
+                                            {% elif app.status == 'TRUNG_TUYEN' %}
+                                                <span class="badge bg-success fw-bold fs-6">TRÚNG TUYỂN 🎉</span>
+                                            {% elif app.status == 'KHONG_TRUNG_TUYEN' %}
+                                                <span class="badge bg-danger">Không trúng tuyển</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ app.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if app.payment and app.payment.status == 'PAID' %}
+                                                <span class="badge bg-success">Đã Thanh Toán</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Chưa Nộp Tiền</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if not app.payment or app.payment.status != 'PAID' %}
+                                                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="switchToPay('{{ app.app_code }}')">
+                                                    <i class="bi bi-qr-code"></i> Nộp Lệ Phí
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-sm btn-outline-success" onclick="switchToPay('{{ app.app_code }}')">
+                                                    <i class="bi bi-receipt"></i> Xem Biên Lai
+                                                </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TAB 1: NỘP HỒ SƠ XÉT TUYỂN MỚI (M02) -->
+            <div class="tab-pane fade" id="content-apply">
+                <div class="card card-custom p-4 bg-white">
+                    <h4 class="fw-bold text-primary mb-3"><i class="bi bi-mortarboard"></i> Đăng Ký Xét Tuyển Đại Học 2026</h4>
+                    <p class="text-muted">Thông tin cá nhân đã được tự động điền theo tài khoản của bạn.</p>
+
+                    <form id="applyForm" onsubmit="handleApply(event)">
+                        <input type="hidden" id="app_userId" value="{{ user.id }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Họ và tên thí sinh (*)</label>
+                                <input type="text" id="app_fullName" class="form-control" required value="{{ user.full_name }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Số CCCD / CMND (*)</label>
+                                <input type="text" id="app_idCard" class="form-control" required placeholder="001202012345">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Email nhận thông báo (*)</label>
+                                <input type="email" id="app_email" class="form-control" required value="{{ user.email }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Số điện thoại (*)</label>
+                                <input type="tel" id="app_phone" class="form-control" required value="{{ user.phone or '' }}" placeholder="0987654321">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Phương thức xét tuyển (*)</label>
+                                <select id="app_method" class="form-select">
+                                    <option value="HOC_BA">Xét học bạ THPT</option>
+                                    <option value="THPT">Xét điểm thi tốt nghiệp THPT</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Tổng điểm xét tuyển (*)</label>
+                                <input type="number" step="0.05" min="0" max="30" id="app_score" class="form-control" required placeholder="VD: 25.5">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Nguyện vọng ngành (*)</label>
+                                <select id="app_majorId" class="form-select">
+                                    {% for m in majors %}
+                                    <option value="{{ m.id }}">{{ m.name }} (Chỉ tiêu: {{ m.quota }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Đường dẫn ảnh minh chứng (Học bạ / Bảng điểm)</label>
+                                <input type="url" id="app_proofUrl" class="form-control" placeholder="https://drive.google.com/... hoặc link ảnh">
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary px-4 fw-bold">
+                                <i class="bi bi-send-check"></i> Xác Nhận Nộp Hồ Sơ
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="applyMsg" class="mt-3"></div>
+                </div>
+            </div>
+
+            <!-- TAB 2: ĐÓNG LỆ PHÍ XÉT TUYỂN (M07) -->
+            <div class="tab-pane fade" id="content-pay">
+                <div class="card card-custom p-4 bg-white">
+                    <h4 class="fw-bold text-success mb-3"><i class="bi bi-credit-card-2-front"></i> Thanh Toán Lệ Phí Tuyển Sinh (VietQR)</h4>
+                    <p class="text-muted">Nhập mã hồ sơ hoặc nhấn 'Nộp Lệ Phí' từ mục <em>Hồ sơ của tôi</em>.</p>
+
+                    <div class="row g-3 align-items-end mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Mã hồ sơ xét tuyển</label>
+                            <input type="text" id="pay_appCode" class="form-control" placeholder="Ví dụ: TS2026-100001">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-success w-100 fw-bold" onclick="handleFetchPayment()">
+                                <i class="bi bi-qr-code"></i> Lấy Mã Thanh Toán
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="paymentDetails" class="d-none border rounded p-4 bg-light">
+                        <div class="row align-items-center">
+                            <div class="col-md-7">
+                                <h5 class="fw-bold text-dark mb-3">Thông tin đơn thu lệ phí</h5>
+                                <p class="mb-1"><strong>Mã giao dịch:</strong> <span id="viewTxCode" class="badge bg-secondary"></span></p>
+                                <p class="mb-1"><strong>Thí sinh:</strong> <span id="viewCandidate"></span></p>
+                                <p class="mb-1"><strong>Số tiền:</strong> <span id="viewAmount" class="text-danger fw-bold fs-5">50,000 VNĐ</span></p>
+                                <p class="mb-1"><strong>Ngân hàng thụ hưởng:</strong> <span id="viewBank">VIETCOMBANK</span></p>
+                                <p class="mb-1"><strong>Số tài khoản:</strong> <span id="viewAcc" class="text-primary fw-bold">9999888899</span></p>
+                                <p class="mb-1"><strong>Nội dung CK:</strong> <span id="viewMemo" class="badge bg-warning text-dark"></span></p>
+                                <p class="mb-3"><strong>Trạng thái:</strong> <span id="viewPayStatus"></span></p>
+
+                                <div id="btnPayArea">
+                                    <button class="btn btn-warning fw-bold" onclick="simulatePay()">
+                                        <i class="bi bi-cash-coin"></i> Giả Lập Thanh Toán Thành Công (Demo)
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-5 text-center border-start">
+                                <h6 class="fw-bold text-muted mb-2">Quét mã VietQR chuyển khoản</h6>
+                                <img id="qrImg" src="" alt="VietQR" class="img-fluid rounded border shadow-sm" style="max-height: 220px;">
+                                <div class="small text-muted mt-2">Hỗ trợ tất cả ứng dụng Ngân hàng & ví điện tử</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: HỖ TRỢ / TICKET (M12) -->
+            <div class="tab-pane fade" id="content-support">
+                <div class="card card-custom p-4 bg-white">
+                    <h4 class="fw-bold text-info mb-3"><i class="bi bi-chat-dots-fill"></i> Gửi Yêu Cầu Hỗ Trợ Tuyển Sinh</h4>
+                    <p class="text-muted">Hội đồng tuyển sinh sẽ trực tiếp phản hồi thắc mắc của bạn.</p>
+
+                    <form id="ticketForm" onsubmit="handleSendTicket(event)">
+                        <input type="hidden" id="tk_userId" value="{{ user.id }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Họ và tên của bạn (*)</label>
+                                <input type="text" id="tk_name" class="form-control" required value="{{ user.full_name }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Email nhận phản hồi (*)</label>
+                                <input type="email" id="tk_email" class="form-control" required value="{{ user.email }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Số điện thoại</label>
+                                <input type="tel" id="tk_phone" class="form-control" value="{{ user.phone or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Chủ đề cần tư vấn</label>
+                                <select id="tk_cat" class="form-select">
+                                    <option value="Hồ sơ & Minh chứng">Hồ sơ & Minh chứng</option>
+                                    <option value="Lệ phí xét tuyển">Lệ phí xét tuyển</option>
+                                    <option value="Quy chế & Ngành học">Quy chế & Ngành học</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Tiêu đề thắc mắc (*)</label>
+                                <input type="text" id="tk_sub" class="form-control" required placeholder="VD: Em nộp nhầm ảnh học bạ...">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Nội dung chi tiết (*)</label>
+                                <textarea id="tk_msg" class="form-control" rows="3" required placeholder="Mô tả cụ thể câu hỏi..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-info text-white fw-bold px-4">
+                                <i class="bi bi-send"></i> Gửi Phiếu Hỗ Trợ
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="ticketMsg" class="mt-3"></div>
+
+                    <hr class="my-4">
+                    <h5 class="fw-bold text-dark"><i class="bi bi-clock-history"></i> Các Phiếu Hỗ Trợ Bạn Đã Gửi ({{ my_tickets|length }})</h5>
+                    {% if my_tickets|length == 0 %}
+                        <p class="text-muted small">Bạn chưa gửi phiếu yêu cầu hỗ trợ nào.</p>
+                    {% else %}
+                        <div class="list-group mt-2">
+                            {% for tk in my_tickets %}
+                            <div class="list-group-item p-3">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="fw-bold mb-1">Mã: {{ tk.ticket_code }} - {{ tk.subject }}</h6>
+                                    <span class="badge {{ 'bg-success' if tk.status == 'RESOLVED' else 'bg-warning text-dark' }}">{{ tk.status }}</span>
+                                </div>
+                                <p class="text-muted small mb-2"><strong>Câu hỏi:</strong> {{ tk.message }}</p>
+                                <div class="p-2 bg-light rounded">
+                                    <strong>Phản hồi từ ban tư vấn:</strong><br>
+                                    {% if tk.reply %}
+                                        <span class="text-success">{{ tk.reply }}</span>
+                                    {% else %}
+                                        <span class="text-muted fst-italic">Cán bộ đang xem xét và sẽ trả lời sớm nhất có thể...</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchToApplyTab() {
+    const btn = document.getElementById('tab-apply');
+    bootstrap.Tab.getOrCreateInstance(btn).show();
+}
+
+function switchToPay(appCode) {
+    document.getElementById('pay_appCode').value = appCode;
+    const payTabBtn = document.getElementById('tab-pay');
+    bootstrap.Tab.getOrCreateInstance(payTabBtn).show();
+    handleFetchPayment();
+}
+
+// --- Nộp hồ sơ (M02) ---
+async function handleApply(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+
+    const payload = {
+        full_name: document.getElementById('app_fullName').value.trim(),
+        id_card: document.getElementById('app_idCard').value.trim(),
+        email: document.getElementById('app_email').value.trim(),
+        phone: document.getElementById('app_phone').value.trim(),
+        method: document.getElementById('app_method').value,
+        score: parseFloat(document.getElementById('app_score').value),
+        major_id: parseInt(document.getElementById('app_majorId').value),
+        user_id: parseInt(document.getElementById('app_userId').value),
+        proof_url: document.getElementById('app_proofUrl').value.trim() || null
+    };
+
+    const msgBox = document.getElementById('applyMsg');
+    try {
+        const res = await fetch('/api/admissions/apply', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            msgBox.innerHTML = `
+                <div class="alert alert-success mt-3">
+                    <h5 class="fw-bold"><i class="bi bi-check-circle"></i> Nộp hồ sơ thành công!</h5>
+                    <p class="mb-1">Mã hồ sơ: <strong class="fs-5 text-danger">${data.app_code}</strong></p>
+                    <button class="btn btn-sm btn-primary" onclick="switchToPay('${data.app_code}')">Đi đến bước đóng lệ phí ngay &raquo;</button>
+                </div>
+            `;
+            setTimeout(() => { location.reload(); }, 2000);
+        } else {
+            msgBox.innerHTML = `<div class="alert alert-danger mt-3">${data.detail || 'Có lỗi xảy ra!'}</div>`;
+        }
+    } catch (err) {
+        msgBox.innerHTML = `<div class="alert alert-danger mt-3">Lỗi kết nối máy chủ!</div>`;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// --- Thanh toán lệ phí (M07) ---
+let currentTxCode = "";
+async function handleFetchPayment() {
+    const code = document.getElementById('pay_appCode').value.trim();
+    if (!code) {
+        alert("Vui lòng nhập mã hồ sơ!");
+        return;
+    }
+    try {
+        const res = await fetch(`/api/admissions/lookup/${encodeURIComponent(code)}`);
+        if (!res.ok) {
+            alert("Không tìm thấy hồ sơ tương ứng!");
+            return;
+        }
+        const data = await res.json();
+        if (!data.payment || !data.payment.tx_code) {
+            alert("Chưa có thông tin lệ phí cho hồ sơ này!");
+            return;
+        }
+
+        const txRes = await fetch(`/api/finance/transaction/${data.payment.tx_code}`);
+        const txData = await txRes.json();
+        currentTxCode = txData.tx_code;
+
+        document.getElementById('paymentDetails').classList.remove('d-none');
+        document.getElementById('viewTxCode').textContent = txData.tx_code;
+        document.getElementById('viewCandidate').textContent = txData.candidate_name;
+        document.getElementById('viewAmount').textContent = txData.amount.toLocaleString() + " VNĐ";
+        document.getElementById('viewMemo').textContent = txData.memo;
+        document.getElementById('qrImg').src = txData.qr_image_url;
+
+        updatePaymentStatusBadge(txData.status);
+    } catch(e) {
+        alert("Lỗi khi tải thông tin thanh toán!");
+    }
+}
+
+function updatePaymentStatusBadge(status) {
+    const badge = document.getElementById('viewPayStatus');
+    const btnArea = document.getElementById('btnPayArea');
+    if (status === 'PAID') {
+        badge.innerHTML = '<span class="badge bg-success fs-6">ĐÃ THANH TOÁN THÀNH CÔNG</span>';
+        btnArea.innerHTML = '<div class="alert alert-success py-2 mb-0 mt-2">Hồ sơ đã hoàn tất lệ phí và sẵn sàng để xét trúng tuyển!</div>';
+    } else {
+        badge.innerHTML = '<span class="badge bg-danger fs-6">CHƯA THANH TOÁN</span>';
+        btnArea.innerHTML = `
+            <button class="btn btn-warning fw-bold" onclick="simulatePay()">
+                <i class="bi bi-cash-coin"></i> Giả Lập Thanh Toán Thành Công (Demo)
+            </button>
+        `;
+    }
+}
+
+async function simulatePay() {
+    if (!currentTxCode) return;
+    try {
+        const res = await fetch(`/api/finance/simulate-pay/${currentTxCode}`, { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+        updatePaymentStatusBadge('PAID');
+        setTimeout(() => { location.reload(); }, 1200);
+    } catch(e) {
+        alert("Lỗi khi giả lập thanh toán!");
+    }
+}
+
+// --- Ticket hỗ trợ (M12) ---
+async function handleSendTicket(e) {
+    e.preventDefault();
+    const payload = {
+        sender_name: document.getElementById('tk_name').value.trim(),
+        sender_email: document.getElementById('tk_email').value.trim(),
+        sender_phone: document.getElementById('tk_phone').value.trim() || null,
+        category: document.getElementById('tk_cat').value,
+        subject: document.getElementById('tk_sub').value.trim(),
+        message: document.getElementById('tk_msg').value.trim(),
+        user_id: parseInt(document.getElementById('tk_userId').value)
+    };
+    const msgBox = document.getElementById('ticketMsg');
+    try {
+        const res = await fetch('/api/support/tickets', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            msgBox.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> Đã gửi phiếu hỗ trợ thành công (Mã: <strong>${data.ticket_code}</strong>)!
+                </div>
+            `;
+            setTimeout(() => { location.reload(); }, 1500);
+        }
+    } catch(e) {
+        msgBox.innerHTML = `<div class="alert alert-danger">Lỗi khi gửi phiếu hỗ trợ!</div>`;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cổng Tuyển Sinh Đại Học 2026{% endblock %}</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --secondary: #0f172a;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --surface: #ffffff;
+            --background: #f8fafc;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Modern Glass Navbar */
+        .navbar-modern {
+            background: rgba(15, 23, 42, 0.92) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+            color: #ffffff !important;
+        }
+
+        .navbar-brand span {
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            font-size: 0.92rem;
+            padding: 8px 16px !important;
+            color: #cbd5e1 !important;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Modern Cards */
+        .card-modern {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card-modern:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.1);
+            border-color: #cbd5e1;
+        }
+
+        /* Buttons */
+        .btn-modern-primary {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 10px 22px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .btn-modern-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-modern-accent {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            padding: 10px 22px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .btn-modern-accent:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* Badges */
+        .badge-pill {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.78rem;
+            letter-spacing: 0.3px;
+        }
+
+        /* Modern Tabs */
+        .nav-pills .nav-link {
+            border-radius: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .nav-pills .nav-link.active {
+            background: var(--primary) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        /* Footer */
+        .footer-modern {
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+            padding: 40px 0 30px;
+            color: var(--text-muted);
+            margin-top: 80px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-modern sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <div class="bg-primary bg-opacity-25 p-2 rounded-3 text-primary d-flex align-items-center justify-content-center">
+                    <i class="bi bi-mortarboard-fill fs-5 text-white"></i>
+                </div>
+                <span>UniAdmission</span> <span class="badge bg-primary bg-opacity-25 text-primary-light ms-1 fs-6">2026</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto ms-lg-3">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="bi bi-house-door me-1"></i> Trang Chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/student"><i class="bi bi-person-badge me-1"></i> Cổng Thí Sinh</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin"><i class="bi bi-shield-lock me-1"></i> Cổng Quản Trị</a>
+                    </li>
+                </ul>
+
+                <!-- Auth Buttons / User Profile -->
+                <div class="d-flex align-items-center gap-2">
+                    {% if user %}
+                        {% if user.role == 'ADMIN' %}
+                            <span class="badge bg-danger py-2 px-3 badge-pill"><i class="bi bi-shield-fill-check me-1"></i> Admin: {{ user.full_name }}</span>
+                            <a href="/logout" class="btn btn-sm btn-outline-light rounded-pill"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
+                        {% else %}
+                            <span class="badge bg-light text-dark py-2 px-3 badge-pill border"><i class="bi bi-person-circle text-primary me-1"></i> {{ user.full_name }}</span>
+                            <a href="/logout" class="btn btn-sm btn-outline-light rounded-pill"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="/login" class="btn btn-sm btn-outline-light rounded-pill px-3"><i class="bi bi-box-arrow-in-right me-1"></i> Đăng Nhập</a>
+                        <a href="/register" class="btn btn-sm btn-modern-accent rounded-pill px-3"><i class="bi bi-person-plus-fill me-1"></i> Đăng Ký</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Modern Clean Footer -->
+    <footer class="footer-modern">
+        <div class="container text-center">
+            <h6 class="fw-bold text-dark mb-2">HỆ THỐNG TUYỂN SINH & TƯ VẤN NHẬP HỌC TRỰC TUYẾN</h6>
+            <p class="small text-muted mb-3">Nền tảng số hóa quản lý tuyển sinh đại học, kết nối nộp hồ sơ, thanh toán lệ phí VietQR và hỗ trợ sinh viên.</p>
+            <div class="d-flex justify-content-center gap-4 small text-muted">
+                <span><i class="bi bi-shield-check text-success"></i> Hệ thống bảo mật 2 lớp</span>
+                <span><i class="bi bi-mortarboard text-primary"></i> 40 Ngành tuyển sinh chính quy</span>
+                <span><i class="bi bi-qr-code text-warning"></i> Thanh toán chuẩn VietQR</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
