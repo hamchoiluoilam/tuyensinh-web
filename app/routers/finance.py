@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from ..database import get_db
 from ..models import FeeConfig, PaymentTransaction, AdmissionApplication
-from ..schemas import PaymentOut
+from ..schemas import PaymentOut, FeeConfigUpdate
 
 router = APIRouter(prefix="/api/finance", tags=["M07 - Tài chính kế toán (Người 2)"])
 
@@ -14,6 +14,20 @@ router = APIRouter(prefix="/api/finance", tags=["M07 - Tài chính kế toán (N
 def get_fee_configs(db: Session = Depends(get_db)):
     """[Kế toán / Thí sinh] Xem biểu phí xét tuyển hiện hành"""
     return db.query(FeeConfig).all()
+
+@router.patch("/fee-configs/{config_id}")
+def update_fee_config(config_id: int, data: FeeConfigUpdate, db: Session = Depends(get_db)):
+    """[Kế toán] Cập nhật mức thu lệ phí xét tuyển"""
+    fee = db.query(FeeConfig).filter(FeeConfig.id == config_id).first()
+    if not fee:
+        raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình biểu phí!")
+    fee.amount = data.amount
+    if data.fee_name:
+        fee.fee_name = data.fee_name
+    if data.description:
+        fee.description = data.description
+    db.commit()
+    return {"message": "Cập nhật biểu phí thành công!", "amount": fee.amount}
 
 @router.get("/transactions", response_model=List[PaymentOut])
 def list_transactions(status: Optional[str] = None, db: Session = Depends(get_db)):
@@ -25,13 +39,12 @@ def list_transactions(status: Optional[str] = None, db: Session = Depends(get_db
 
 @router.get("/transaction/{tx_code}")
 def get_transaction_by_code(tx_code: str, db: Session = Depends(get_db)):
-    """Tra cứu chi tiết một giao dịch thanh toán kèm mã QR giả lập"""
+    """Tra cứu chi tiết một giao dịch thanh toán kèm mã QR và thông tin biên lai"""
     tx = db.query(PaymentTransaction).filter(PaymentTransaction.tx_code == tx_code).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Không tìm thấy giao dịch thanh toán!")
 
     app = tx.application
-    # Giả lập chuỗi thanh toán VietQR chuyển khoản ngân hàng
     bank_account = "9999888899"
     bank_name = "VIETCOMBANK"
     amount = int(tx.amount)
@@ -48,6 +61,7 @@ def get_transaction_by_code(tx_code: str, db: Session = Depends(get_db)):
         "candidate_name": app.full_name if app else "",
         "id_card": app.id_card if app else "",
         "app_code": app.app_code if app else "",
+        "major_name": app.major.name if (app and app.major) else "",
         "bank_account": bank_account,
         "bank_name": bank_name,
         "memo": memo,
@@ -76,6 +90,29 @@ def simulate_payment(tx_code: str, db: Session = Depends(get_db)):
         "tx_code": tx.tx_code,
         "status": tx.status,
         "paid_at": tx.paid_at
+    }
+
+@router.get("/receipt/{tx_code}")
+def get_payment_receipt(tx_code: str, db: Session = Depends(get_db)):
+    """[Biên lai điện tử] Lấy dữ liệu in phiếu thu biên lai cho thí sinh"""
+    tx = db.query(PaymentTransaction).filter(PaymentTransaction.tx_code == tx_code).first()
+    if not tx or tx.status != "PAID":
+        raise HTTPException(status_code=400, detail="Giao dịch chưa thanh toán hoặc không tồn tại để xuất biên lai!")
+
+    app = tx.application
+    return {
+        "receipt_number": f"BL-{tx.tx_code}",
+        "tx_code": tx.tx_code,
+        "app_code": app.app_code,
+        "full_name": app.full_name,
+        "id_card": app.id_card,
+        "email": app.email,
+        "phone": app.phone,
+        "major_name": app.major.name,
+        "amount": tx.amount,
+        "paid_at": tx.paid_at.strftime("%H:%M:%S ngày %d/%m/%Y") if tx.paid_at else "---",
+        "method": tx.method,
+        "status": "ĐÃ XÁC NHẬN NỘP ĐỦ LỆ PHÍ"
     }
 
 @router.get("/revenue-summary")

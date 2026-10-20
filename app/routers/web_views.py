@@ -124,6 +124,7 @@ def admin_portal(request: Request, db: Session = Depends(get_db)):
     transactions = db.query(PaymentTransaction).order_by(PaymentTransaction.created_at.desc()).all()
     tickets = db.query(SupportTicket).order_by(SupportTicket.created_at.desc()).all()
     
+    fees = db.query(FeeConfig).all()
     paid_tx = [t for t in transactions if t.status == 'PAID']
     revenue = sum(t.amount for t in paid_tx)
 
@@ -131,12 +132,28 @@ def admin_portal(request: Request, db: Session = Depends(get_db)):
         "request": request,
         "user": user,
         "majors": majors,
+        "fees": fees,
         "applications": applications,
         "transactions": transactions,
         "tickets": tickets,
         "revenue": revenue,
         "paid_count": len(paid_tx),
         "total_count": len(transactions)
+    })
+
+# --- BIÊN LAI ĐIỆN TỬ (IN / XUẤT PHIẾU THU LỆ PHÍ) ---
+@router.get("/receipt/{tx_code}")
+def receipt_page(tx_code: str, request: Request, db: Session = Depends(get_db)):
+    tx = db.query(PaymentTransaction).filter(PaymentTransaction.tx_code == tx_code).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hóa đơn thanh toán!")
+    app = db.query(AdmissionApplication).filter(AdmissionApplication.id == tx.application_id).first()
+    major = db.query(Major).filter(Major.id == app.major_id).first() if app else None
+    return templates.TemplateResponse("receipt.html", {
+        "request": request,
+        "tx": tx,
+        "app": app,
+        "major": major
     })
 
 # --- FILE SWAGGER UI RIÊNG & TÀI LIỆU OPENAPI ---

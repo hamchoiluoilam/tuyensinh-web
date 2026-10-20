@@ -2,10 +2,16 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import os
+import datetime
 
 from app.database import engine, Base, SessionLocal
 from app.models import Major, Subject, FeeConfig, FAQItem, AdmissionApplication, PaymentTransaction, SupportTicket, User
 from app.routers import admissions, finance, support, web_views, auth
+from app.routers.auth import hash_password
+
+# Tạo thư mục upload ảnh thật nếu chưa có
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "app", "static", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Tạo bảng dữ liệu
 Base.metadata.create_all(bind=engine)
@@ -15,6 +21,9 @@ app = FastAPI(
     description="Đồ án Web Python 3 Phân hệ: M02 (Tuyển sinh) + M07 (Tài chính - Lệ phí) + M12 (Hỗ trợ người học)",
     version="2.0.0"
 )
+
+# Cấu hình Static Files cho Uploads & Assets
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "app", "static")), name="static")
 
 # Đăng ký các router
 app.include_router(auth.router)
@@ -27,18 +36,18 @@ app.include_router(web_views.router)
 def seed_demo_data():
     db = SessionLocal()
     try:
-        # 1. Tạo tài khoản mẫu (Admin & Học sinh)
+        # 1. Tạo tài khoản mẫu (Admin & Học sinh) với mật khẩu bảo mật băm SHA-256 + Salt
         if db.query(User).count() == 0:
             admin_user = User(
                 email="admin@tuyensinh.edu.vn",
-                password="admin123",
+                password=hash_password("admin123"),
                 full_name="Quản Trị Viên Tuyển Sinh",
                 phone="0243888999",
                 role="ADMIN"
             )
             student_user = User(
                 email="student@gmail.com",
-                password="123456",
+                password=hash_password("123456"),
                 full_name="Nguyễn Văn An",
                 phone="0987654321",
                 role="STUDENT"
@@ -95,7 +104,10 @@ def seed_demo_data():
 
         # 6. Hồ sơ mẫu
         if db.query(AdmissionApplication).count() == 0:
-            it = db.query(Major).filter(Major.code == "7480201").first()
+            it = db.query(Major).filter(Major.code == "7480201").first() # CNTT
+            se = db.query(Major).filter(Major.code == "7480103").first() # Kỹ thuật phần mềm
+            if not se:
+                se = db.query(Major).filter(Major.id != it.id).first()
             student = db.query(User).filter(User.role == "STUDENT").first()
             
             sample_candidates = [
@@ -115,7 +127,9 @@ def seed_demo_data():
                     phone=f"091234560{idx}",
                     method="HOC_BA",
                     score=c["score"],
-                    major_id=it.id,
+                    major_id=it.id if it else 1,
+                    major_nv2_id=se.id if se else None,
+                    proof_url="/static/uploads/default_proof.png",
                     user_id=c["uid"],
                     status="HOP_LE"
                 )
@@ -127,6 +141,7 @@ def seed_demo_data():
                     application_id=app.id,
                     amount=50000.0,
                     status="PAID" if c["paid"] else "UNPAID",
+                    paid_at=datetime.datetime.utcnow() if c["paid"] else None,
                     qr_payload=f"2vcb://pay?acc=99998888&amount=50000&memo=PAY-{app_code}"
                 )
                 db.add(tx)

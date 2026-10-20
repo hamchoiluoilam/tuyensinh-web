@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biên lai điện tử - {{ tx.tx_code }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #1e293b;
+        }
+        .receipt-card {
+            background: #ffffff;
+            max-width: 750px;
+            margin: 40px auto;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #cbd5e1;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        .receipt-stamp {
+            border: 3px double #16a34a;
+            color: #16a34a;
+            font-weight: bold;
+            font-size: 14px;
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transform: rotate(-5deg);
+            position: absolute;
+            right: 40px;
+            top: 140px;
+            opacity: 0.88;
+        }
+        .info-table td {
+            padding: 8px 12px;
+            vertical-align: middle;
+        }
+        .info-table td.label-col {
+            font-weight: 600;
+            color: #475569;
+            width: 35%;
+        }
+        .amount-box {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            margin: 20px 0;
+        }
+        .amount-number {
+            font-size: 26px;
+            font-weight: 800;
+            color: #0284c7;
+        }
+        @media print {
+            body {
+                background: #ffffff;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .receipt-card {
+                box-shadow: none;
+                border: none;
+                margin: 0;
+                padding: 15px;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-center mt-4 no-print">
+            <button onclick="window.print()" class="btn btn-primary px-4 me-2">
+                <i class="bi bi-printer me-2"></i>In Biên Lai / Xuất PDF
+            </button>
+            <a href="/student" class="btn btn-outline-secondary px-4">
+                <i class="bi bi-arrow-left me-2"></i>Quay lại Cổng Thí Sinh
+            </a>
+        </div>
+
+        <div class="receipt-card">
+            <!-- Dấu mộc điện tử -->
+            <div class="receipt-stamp">
+                <i class="bi bi-check-circle-fill me-1"></i> ĐÃ THANH TOÁN<br>
+                XÁC NHẬN ĐIỆN TỬ
+            </div>
+
+            <div class="receipt-header">
+                <h6 class="text-uppercase fw-bold text-muted mb-1">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h6>
+                <p class="small text-muted mb-3">Độc lập - Tự do - Hạnh phúc</p>
+                <div class="mb-2">
+                    <span class="badge bg-primary px-3 py-2 fs-6">HỘI ĐỒNG TUYỂN SINH ĐẠI HỌC 2026</span>
+                </div>
+                <h3 class="fw-bold text-dark mt-3 mb-1">BIÊN LAI THU LỆ PHÍ XÉT TUYỂN</h3>
+                <p class="text-muted small">Mã hóa đơn: <strong>{{ tx.tx_code }}</strong> | Ngày tạo: {{ tx.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+            </div>
+
+            <table class="table info-table table-borderless">
+                <tbody>
+                    <tr>
+                        <td class="label-col"><i class="bi bi-person me-2 text-primary"></i>Họ và tên thí sinh:</td>
+                        <td class="fw-bold">{{ app.full_name if app else '---' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col"><i class="bi bi-card-heading me-2 text-primary"></i>Số CCCD / CMND:</td>
+                        <td class="fw-bold text-dark">{{ app.id_card if app else '---' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Mã hồ sơ xét tuyển:</td>
+                        <td><span class="badge bg-secondary fs-6">{{ app.app_code if app else '---' }}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="label-col"><i class="bi bi-bookmark-star me-2 text-primary"></i>Nguyện vọng đăng ký:</td>
+                        <td>
+                            <div><strong>NV1:</strong> {{ major.name if major else '---' }}</div>
+                            {% if app and app.major_nv2 %}
+                            <div class="text-muted small"><strong>NV2:</strong> {{ app.major_nv2.name }}</div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-col"><i class="bi bi-envelope me-2 text-primary"></i>Email liên hệ:</td>
+                        <td>{{ app.email if app else '---' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col"><i class="bi bi-telephone me-2 text-primary"></i>Số điện thoại:</td>
+                        <td>{{ app.phone if app else '---' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="amount-box">
+                <div class="text-muted small mb-1">NỘI DUNG THU PHÍ: <strong>Lệ phí xử lý hồ sơ đăng ký xét tuyển đại học năm 2026</strong></div>
+                <div class="amount-number">{{ "{:,.0f}".format(tx.amount) }} VNĐ</div>
+                <div class="text-muted small"><em>(Bằng chữ: Năm mươi nghìn đồng chẵn)</em></div>
+            </div>
+
+            <table class="table info-table table-borderless mt-3">
+                <tbody>
+                    <tr>
+                        <td class="label-col"><i class="bi bi-credit-card me-2 text-success"></i>Phương thức thanh toán:</td>
+                        <td>{{ tx.method }} (Chuyển khoản VietQR tự động)</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col"><i class="bi bi-clock-history me-2 text-success"></i>Thời gian nộp phí:</td>
+                        <td>{{ tx.paid_at.strftime('%d/%m/%Y %H:%M:%S') if tx.paid_at else 'Đã xác nhận' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label-col"><i class="bi bi-patch-check-fill me-2 text-success"></i>Tình trạng hồ sơ:</td>
+                        <td><span class="badge bg-success">HỢP LỆ - ĐÃ HOÀN TẤT NỘP LỆ PHÍ</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="row mt-5 text-center small text-muted">
+                <div class="col-6">
+                    <p class="mb-5"><strong>NGƯỜI NỘP TIỀN</strong><br><em>(Ký, ghi rõ họ tên)</em></p>
+                    <p class="fw-bold mt-4">{{ app.full_name if app else '' }}</p>
+                </div>
+                <div class="col-6">
+                    <p class="mb-5"><strong>BỘ PHẬN TÀI CHÍNH - KẾ TOÁN</strong><br><em>(Xác thực điện tử)</em></p>
+                    <p class="text-success fw-bold mt-4">HỆ THỐNG XÁC THỰC TỰ ĐỘNG</p>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-top text-center text-muted small">
+                Biên lai điện tử có giá trị tương đương hóa đơn giấy được lưu trữ an toàn trên cổng tuyển sinh trực tuyến.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

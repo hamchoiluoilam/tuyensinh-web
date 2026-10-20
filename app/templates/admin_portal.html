@@ -106,7 +106,7 @@
                                 <th>Khối Ngành</th>
                                 <th>Chỉ Tiêu</th>
                                 <th>Điểm Chuẩn</th>
-                                <th>Chi Tiết</th>
+                                <th>Thao Tác</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -115,9 +115,16 @@
                                 <td><code>{{ m.code }}</code></td>
                                 <td><strong>{{ m.name }}</strong></td>
                                 <td><span class="badge bg-light text-dark border">{{ m.category }}</span></td>
-                                <td><span class="badge bg-primary">{{ m.quota }} chỉ tiêu</span></td>
-                                <td><span class="badge bg-danger">{{ m.benchmark_score }}</span></td>
-                                <td><a href="/majors/{{ m.id }}" target="_blank" class="btn btn-sm btn-outline-info py-0">Xem môn học</a></td>
+                                <td><span class="badge bg-primary fs-6">{{ m.quota }} chỉ tiêu</span></td>
+                                <td><span class="badge bg-danger fs-6">{{ m.benchmark_score }}</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/majors/{{ m.id }}" target="_blank" class="btn btn-outline-info py-0">Xem môn</a>
+                                        <button class="btn btn-outline-primary py-0" onclick="openQuotaModal({{ m.id }}, '{{ m.name }}', {{ m.quota }}, {{ m.benchmark_score }})">
+                                            <i class="bi bi-pencil-square"></i> Sửa chỉ tiêu
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -128,16 +135,21 @@
 
         <!-- Bảng danh sách hồ sơ -->
         <div class="card card-custom p-3">
-            <h5 class="fw-bold mb-3">Danh Sách Toàn Bộ Hồ Sơ Xét Tuyển ({{ applications|length }})</h5>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 class="fw-bold mb-0">Danh Sách Toàn Bộ Hồ Sơ Xét Tuyển ({{ applications|length }})</h5>
+                <div class="d-flex gap-2">
+                    <input type="text" id="candidateSearchInput" onkeyup="filterCandidatesTable()" class="form-control form-control-sm" placeholder="Tìm theo tên hoặc CCCD...">
+                </div>
+            </div>
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle" id="candidatesTable">
                     <thead class="table-light">
                         <tr>
                             <th>Mã HS</th>
-                            <th>Họ Tên</th>
-                            <th>CCCD</th>
-                            <th>Ngành</th>
+                            <th>Họ Tên & CCCD</th>
+                            <th>Nguyện Vọng Đăng Ký</th>
                             <th>Điểm</th>
+                            <th>Minh Chứng</th>
                             <th>Lệ Phí (M07)</th>
                             <th>Trạng Thái</th>
                             <th>Thao Tác</th>
@@ -147,13 +159,35 @@
                         {% for app in applications %}
                         <tr>
                             <td><strong>{{ app.app_code }}</strong></td>
-                            <td>{{ app.full_name }}</td>
-                            <td>{{ app.id_card }}</td>
-                            <td><span class="badge bg-secondary">{{ app.major.code }}</span> {{ app.major.name }}</td>
+                            <td>
+                                <strong>{{ app.full_name }}</strong><br>
+                                <small class="text-muted"><i class="bi bi-card-text"></i> {{ app.id_card }}</small>
+                            </td>
+                            <td>
+                                <div><span class="badge bg-primary">NV1</span> {{ app.major.name }} ({{ app.major.code }})</div>
+                                {% if app.major_nv2 %}
+                                <div class="text-muted small mt-1"><span class="badge bg-secondary">NV2</span> {{ app.major_nv2.name }} ({{ app.major_nv2.code }})</div>
+                                {% endif %}
+                                {% if app.admitted_major_name %}
+                                <div class="text-success fw-bold small mt-1"><i class="bi bi-check-circle-fill"></i> Trúng tuyển: {{ app.admitted_major_name }}</div>
+                                {% endif %}
+                            </td>
                             <td><span class="fw-bold text-primary fs-6">{{ app.score }}</span></td>
+                            <td>
+                                {% if app.proof_url %}
+                                <a href="{{ app.proof_url }}" target="_blank" class="badge bg-info text-dark text-decoration-none">
+                                    <i class="bi bi-file-earmark-image"></i> Xem file
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">---</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if app.payment and app.payment.status == 'PAID' %}
                                     <span class="badge bg-success">Đã Đóng</span>
+                                    <a href="/receipt/{{ app.payment.tx_code }}" target="_blank" class="btn btn-sm btn-outline-success py-0 ms-1" title="In Biên Lai Điện Tử">
+                                        <i class="bi bi-printer"></i>
+                                    </a>
                                 {% else %}
                                     <span class="badge bg-danger">Chưa Nộp</span>
                                 {% endif %}
@@ -163,6 +197,10 @@
                                     <span class="badge bg-warning text-dark">Chờ duyệt</span>
                                 {% elif app.status == 'HOP_LE' %}
                                     <span class="badge bg-primary">Hợp Lệ</span>
+                                {% elif app.status == 'TRUNG_TUYEN_NV1' %}
+                                    <span class="badge bg-success fw-bold">TRÚNG TUYỂN NV1</span>
+                                {% elif app.status == 'TRUNG_TUYEN_NV2' %}
+                                    <span class="badge bg-info text-dark fw-bold">TRÚNG TUYỂN NV2</span>
                                 {% elif app.status == 'TRUNG_TUYEN' %}
                                     <span class="badge bg-success fw-bold">TRÚNG TUYỂN</span>
                                 {% elif app.status == 'KHONG_TRUNG_TUYEN' %}
@@ -187,6 +225,28 @@
 
     <!-- PANE 2: M07 TÀI CHÍNH KẾ TOÁN -->
     <div class="tab-pane fade" id="pane-m07">
+        <!-- Biểu phí xét tuyển cấu hình -->
+        <div class="card card-custom p-4 mb-4 bg-light border">
+            <h5 class="fw-bold text-success mb-2"><i class="bi bi-gear-fill"></i> Cấu Hình Biểu Phí Xét Tuyển Toàn Trường</h5>
+            <p class="text-muted small mb-3">Admin có thể tùy chỉnh mức thu lệ phí theo từng đợt tuyển sinh. Số tiền trên mã VietQR sẽ tự động áp dụng theo mức phí này.</p>
+            {% for f in fees %}
+            <div class="row align-items-center bg-white p-3 rounded shadow-sm mb-2">
+                <div class="col-md-5">
+                    <strong>{{ f.fee_name }}</strong><br>
+                    <small class="text-muted">{{ f.description or 'Mức phí áp dụng cho mỗi hồ sơ nộp vào hệ thống' }}</small>
+                </div>
+                <div class="col-md-3">
+                    <span class="fs-5 fw-bold text-danger">{{ "{:,.0f}".format(f.amount) }} VNĐ</span>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-sm btn-outline-success fw-semibold" onclick="openFeeModal({{ f.id }}, '{{ f.fee_name }}', {{ f.amount }})">
+                        <i class="bi bi-pencil-square"></i> Điều Chỉnh Mức Phí
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
         <div class="card card-custom p-3 mb-4">
             <h5 class="fw-bold text-success mb-3"><i class="bi bi-cash-stack"></i> Sổ Giao Dịch Lệ Phí Tuyển Sinh ({{ transactions|length }})</h5>
             <div class="table-responsive">
@@ -282,6 +342,60 @@
 
 </div>
 
+<!-- Modal Cập Nhật Chỉ Tiêu & Điểm Chuẩn Ngành (M02) -->
+<div class="modal fade" id="quotaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary"></i> Sửa Chỉ Tiêu: <span id="quotaMajorName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="quotaMajorId">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Chỉ tiêu tuyển sinh (*):</label>
+                    <input type="number" id="quotaVal" class="form-control" min="1" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Điểm chuẩn tham khảo:</label>
+                    <input type="number" step="0.05" id="benchmarkVal" class="form-control" min="0" max="30">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary fw-bold" onclick="submitQuotaUpdate()">Lưu Thay Đổi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Điều Chỉnh Mức Phí Xét Tuyển (M07) -->
+<div class="modal fade" id="feeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-wallet2 text-success"></i> Điều Chỉnh Biểu Phí Xét Tuyển</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="feeId">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tên biểu phí:</label>
+                    <input type="text" id="feeNameInput" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mức phí áp dụng (VNĐ) (*):</label>
+                    <input type="number" step="1000" id="feeAmountInput" class="form-control" required min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success fw-bold" onclick="submitFeeUpdate()">Xác Nhận Cập Nhật</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Trả Lời Ticket -->
 <div class="modal fade" id="replyModal" tabindex="-1">
     <div class="dialog modal-dialog">
@@ -311,6 +425,85 @@
 
 {% block scripts %}
 <script>
+// --- Tìm kiếm bảng thí sinh ---
+function filterCandidatesTable() {
+    const filter = document.getElementById("candidateSearchInput").value.toLowerCase();
+    const rows = document.querySelectorAll("#candidatesTable tbody tr");
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+    });
+}
+
+// --- Quản lý chỉ tiêu & điểm chuẩn ngành (M02) ---
+let quotaModalObj = null;
+function openQuotaModal(id, name, quota, benchmark) {
+    document.getElementById('quotaMajorId').value = id;
+    document.getElementById('quotaMajorName').textContent = name;
+    document.getElementById('quotaVal').value = quota;
+    document.getElementById('benchmarkVal').value = benchmark;
+    quotaModalObj = new bootstrap.Modal(document.getElementById('quotaModal'));
+    quotaModalObj.show();
+}
+
+async function submitQuotaUpdate() {
+    const id = document.getElementById('quotaMajorId').value;
+    const quota = parseInt(document.getElementById('quotaVal').value);
+    const benchmark = parseFloat(document.getElementById('benchmarkVal').value);
+
+    try {
+        const res = await fetch(`/api/admissions/majors/${id}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ quota: quota, benchmark_score: benchmark })
+        });
+        if (res.ok) {
+            quotaModalObj.hide();
+            alert("Cập nhật chỉ tiêu & điểm chuẩn ngành thành công!");
+            location.reload();
+        } else {
+            const data = await res.json();
+            alert(data.detail || "Lỗi khi cập nhật!");
+        }
+    } catch(err) {
+        alert("Lỗi kết nối máy chủ!");
+    }
+}
+
+// --- Điều chỉnh mức biểu phí (M07) ---
+let feeModalObj = null;
+function openFeeModal(id, name, amount) {
+    document.getElementById('feeId').value = id;
+    document.getElementById('feeNameInput').value = name;
+    document.getElementById('feeAmountInput').value = amount;
+    feeModalObj = new bootstrap.Modal(document.getElementById('feeModal'));
+    feeModalObj.show();
+}
+
+async function submitFeeUpdate() {
+    const id = document.getElementById('feeId').value;
+    const fee_name = document.getElementById('feeNameInput').value.trim();
+    const amount = parseFloat(document.getElementById('feeAmountInput').value);
+
+    try {
+        const res = await fetch(`/api/finance/fee-configs/${id}`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ fee_name: fee_name, amount: amount })
+        });
+        if (res.ok) {
+            feeModalObj.hide();
+            alert("Cập nhật biểu phí xét tuyển thành công!");
+            location.reload();
+        } else {
+            const data = await res.json();
+            alert(data.detail || "Lỗi khi cập nhật biểu phí!");
+        }
+    } catch(err) {
+        alert("Lỗi kết nối máy chủ!");
+    }
+}
+
 // --- Duyệt hồ sơ ---
 async function reviewApp(appId, status) {
     if (!confirm(`Bạn có chắc chắn muốn duyệt hồ sơ này là [${status}]?`)) return;

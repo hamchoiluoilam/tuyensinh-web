@@ -73,8 +73,9 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Mã Hồ Sơ</th>
-                                        <th>Ngành Xét Tuyển</th>
+                                        <th>Nguyện Vọng Xét Tuyển</th>
                                         <th>Điểm</th>
+                                        <th>Minh Chứng</th>
                                         <th>Trạng Thái Hồ Sơ</th>
                                         <th>Lệ Phí (M07)</th>
                                         <th>Hành Động</th>
@@ -85,15 +86,33 @@
                                     <tr>
                                         <td><strong>{{ app.app_code }}</strong></td>
                                         <td>
-                                            <strong>{{ app.major.name }}</strong><br>
-                                            <span class="badge bg-secondary font-monospace">{{ app.major.code }}</span>
+                                            <div><span class="badge bg-primary">NV1</span> <strong>{{ app.major.name }}</strong> ({{ app.major.code }})</div>
+                                            {% if app.major_nv2 %}
+                                            <div class="text-muted small mt-1"><span class="badge bg-secondary">NV2</span> {{ app.major_nv2.name }} ({{ app.major_nv2.code }})</div>
+                                            {% endif %}
+                                            {% if app.admitted_major_name %}
+                                            <div class="text-success fw-bold small mt-1"><i class="bi bi-check-circle-fill"></i> Trúng tuyển: {{ app.admitted_major_name }}</div>
+                                            {% endif %}
                                         </td>
                                         <td><span class="badge bg-warning text-dark fs-6">{{ app.score }}</span></td>
+                                        <td>
+                                            {% if app.proof_url %}
+                                            <a href="{{ app.proof_url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Xem ảnh học bạ/chứng chỉ">
+                                                <i class="bi bi-image"></i> Xem
+                                            </a>
+                                            {% else %}
+                                            <span class="text-muted small">---</span>
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             {% if app.status == 'CHO_DUYET' %}
                                                 <span class="badge bg-warning text-dark">Chờ xét duyệt</span>
                                             {% elif app.status == 'HOP_LE' %}
                                                 <span class="badge bg-primary">Hồ sơ Hợp Lệ</span>
+                                            {% elif app.status == 'TRUNG_TUYEN_NV1' %}
+                                                <span class="badge bg-success fw-bold fs-6">TRÚNG TUYỂN NV1 🎉</span>
+                                            {% elif app.status == 'TRUNG_TUYEN_NV2' %}
+                                                <span class="badge bg-info text-dark fw-bold fs-6">TRÚNG TUYỂN NV2 🎉</span>
                                             {% elif app.status == 'TRUNG_TUYEN' %}
                                                 <span class="badge bg-success fw-bold fs-6">TRÚNG TUYỂN 🎉</span>
                                             {% elif app.status == 'KHONG_TRUNG_TUYEN' %}
@@ -104,9 +123,9 @@
                                         </td>
                                         <td>
                                             {% if app.payment and app.payment.status == 'PAID' %}
-                                                <span class="badge bg-success">Đã Thanh Toán</span>
+                                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Đã Nộp Đủ</span>
                                             {% else %}
-                                                <span class="badge bg-danger">Chưa Nộp Tiền</span>
+                                                <span class="badge bg-danger"><i class="bi bi-exclamation-circle"></i> Chưa Nộp</span>
                                             {% endif %}
                                         </td>
                                         <td>
@@ -115,9 +134,14 @@
                                                     <i class="bi bi-qr-code"></i> Nộp Lệ Phí
                                                 </button>
                                             {% else %}
-                                                <button class="btn btn-sm btn-outline-success" onclick="switchToPay('{{ app.app_code }}')">
-                                                    <i class="bi bi-receipt"></i> Xem Biên Lai
-                                                </button>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-success" onclick="switchToPay('{{ app.app_code }}')">
+                                                        <i class="bi bi-eye"></i> Chi tiết
+                                                    </button>
+                                                    <a href="/receipt/{{ app.payment.tx_code }}" target="_blank" class="btn btn-outline-primary" title="In Phiếu Thu / Biên Lai Điện Tử">
+                                                        <i class="bi bi-printer"></i> In Biên Lai
+                                                    </a>
+                                                </div>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -156,7 +180,7 @@
                                 <input type="tel" id="app_phone" class="form-control" required value="{{ user.phone or '' }}" placeholder="0987654321">
                             </div>
 
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label fw-semibold">Phương thức xét tuyển (*)</label>
                                 <select id="app_method" class="form-select">
                                     <option value="HOC_BA">Xét học bạ THPT</option>
@@ -164,23 +188,38 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label fw-semibold">Tổng điểm xét tuyển (*)</label>
                                 <input type="number" step="0.05" min="0" max="30" id="app_score" class="form-control" required placeholder="VD: 25.5">
                             </div>
 
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Nguyện vọng ngành (*)</label>
-                                <select id="app_majorId" class="form-select">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-primary"><i class="bi bi-star-fill text-warning"></i> Nguyện Vọng 1 (* Bắt buộc)</label>
+                                <select id="app_majorId" class="form-select border-primary" required>
+                                    <option value="">-- Chọn ngành Nguyện Vọng 1 --</option>
                                     {% for m in majors %}
-                                    <option value="{{ m.id }}">{{ m.name }} (Chỉ tiêu: {{ m.quota }})</option>
+                                    <option value="{{ m.id }}">{{ m.name }} (Mã: {{ m.code }} | Chỉ tiêu: {{ m.quota }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-secondary"><i class="bi bi-shield-check"></i> Nguyện Vọng 2 (Tùy chọn - Dự phòng)</label>
+                                <select id="app_majorNv2Id" class="form-select">
+                                    <option value="">-- Không đăng ký Nguyện Vọng 2 --</option>
+                                    {% for m in majors %}
+                                    <option value="{{ m.id }}">{{ m.name }} (Mã: {{ m.code }} | Chỉ tiêu: {{ m.quota }})</option>
                                     {% endfor %}
                                 </select>
                             </div>
 
                             <div class="col-12">
-                                <label class="form-label fw-semibold">Đường dẫn ảnh minh chứng (Học bạ / Bảng điểm)</label>
-                                <input type="url" id="app_proofUrl" class="form-control" placeholder="https://drive.google.com/... hoặc link ảnh">
+                                <label class="form-label fw-semibold"><i class="bi bi-cloud-arrow-up text-primary"></i> Tải Minh Chứng Học Bạ / Bảng Điểm (Tải file từ máy tính hoặc điện thoại)</label>
+                                <div class="input-group mb-2">
+                                    <input type="file" id="app_fileInput" class="form-control" accept="image/jpeg,image/png,image/webp,application/pdf" onchange="uploadRealProof(this)">
+                                </div>
+                                <input type="hidden" id="app_proofUrl" value="">
+                                <div id="uploadStatusBox" class="small text-muted">Chấp nhận định dạng ảnh JPG, PNG, WEBP hoặc file PDF (tối đa 10MB).</div>
                             </div>
                         </div>
 
@@ -225,7 +264,7 @@
                                 <p class="mb-1"><strong>Nội dung CK:</strong> <span id="viewMemo" class="badge bg-warning text-dark"></span></p>
                                 <p class="mb-3"><strong>Trạng thái:</strong> <span id="viewPayStatus"></span></p>
 
-                                <div id="btnPayArea">
+                                <div id="btnPayArea" class="d-flex align-items-center gap-2">
                                     <button class="btn btn-warning fw-bold" onclick="simulatePay()">
                                         <i class="bi bi-cash-coin"></i> Giả Lập Thanh Toán Thành Công (Demo)
                                     </button>
@@ -337,11 +376,61 @@ function switchToPay(appCode) {
     handleFetchPayment();
 }
 
+// --- Upload ảnh học bạ thật từ máy tính/điện thoại (M02) ---
+async function uploadRealProof(fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const statusBox = document.getElementById('uploadStatusBox');
+    statusBox.innerHTML = '<span class="text-primary"><i class="bi bi-arrow-repeat spin"></i> Đang tải file lên hệ thống lưu trữ...</span>';
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const res = await fetch('/api/admissions/upload-proof', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+            document.getElementById('app_proofUrl').value = data.url;
+            statusBox.innerHTML = `
+                <div class="alert alert-success py-2 mt-2 mb-0 d-flex align-items-center justify-content-between">
+                    <div>
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Đã tải lên thành công: <strong>${data.filename}</strong>
+                    </div>
+                    <a href="${data.url}" target="_blank" class="btn btn-sm btn-outline-success">Xem trước ảnh</a>
+                </div>
+            `;
+        } else {
+            statusBox.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> ${data.detail || 'Lỗi khi tải file!'}</span>`;
+        }
+    } catch(err) {
+        statusBox.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Lỗi kết nối khi tải file!</span>`;
+    }
+}
+
 // --- Nộp hồ sơ (M02) ---
 async function handleApply(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;
+
+    const major1Val = document.getElementById('app_majorId').value;
+    if (!major1Val) {
+        alert("Vui lòng chọn ngành Nguyện Vọng 1!");
+        btn.disabled = false;
+        return;
+    }
+
+    const major2Val = document.getElementById('app_majorNv2Id').value;
+    if (major2Val && major2Val === major1Val) {
+        alert("Nguyện vọng 2 không được trùng với Nguyện vọng 1! Vui lòng chọn ngành khác.");
+        btn.disabled = false;
+        return;
+    }
 
     const payload = {
         full_name: document.getElementById('app_fullName').value.trim(),
@@ -350,7 +439,8 @@ async function handleApply(e) {
         phone: document.getElementById('app_phone').value.trim(),
         method: document.getElementById('app_method').value,
         score: parseFloat(document.getElementById('app_score').value),
-        major_id: parseInt(document.getElementById('app_majorId').value),
+        major_id: parseInt(major1Val),
+        major_nv2_id: major2Val ? parseInt(major2Val) : null,
         user_id: parseInt(document.getElementById('app_userId').value),
         proof_url: document.getElementById('app_proofUrl').value.trim() || null
     };
@@ -368,10 +458,11 @@ async function handleApply(e) {
                 <div class="alert alert-success mt-3">
                     <h5 class="fw-bold"><i class="bi bi-check-circle"></i> Nộp hồ sơ thành công!</h5>
                     <p class="mb-1">Mã hồ sơ: <strong class="fs-5 text-danger">${data.app_code}</strong></p>
+                    <p class="small text-muted mb-2">Đã ghi nhận NV1${data.major_nv2_id ? ' và NV2' : ''}. Vui lòng chuyển sang bước nộp lệ phí để hồ sơ được đưa vào danh sách lọc ảo.</p>
                     <button class="btn btn-sm btn-primary" onclick="switchToPay('${data.app_code}')">Đi đến bước đóng lệ phí ngay &raquo;</button>
                 </div>
             `;
-            setTimeout(() => { location.reload(); }, 2000);
+            setTimeout(() => { location.reload(); }, 2500);
         } else {
             msgBox.innerHTML = `<div class="alert alert-danger mt-3">${data.detail || 'Có lỗi xảy ra!'}</div>`;
         }
@@ -423,10 +514,17 @@ function updatePaymentStatusBadge(status) {
     const badge = document.getElementById('viewPayStatus');
     const btnArea = document.getElementById('btnPayArea');
     if (status === 'PAID') {
-        badge.innerHTML = '<span class="badge bg-success fs-6">ĐÃ THANH TOÁN THÀNH CÔNG</span>';
-        btnArea.innerHTML = '<div class="alert alert-success py-2 mb-0 mt-2">Hồ sơ đã hoàn tất lệ phí và sẵn sàng để xét trúng tuyển!</div>';
+        badge.innerHTML = '<span class="badge bg-success fs-6"><i class="bi bi-check-circle"></i> ĐÃ THANH TOÁN THÀNH CÔNG</span>';
+        btnArea.innerHTML = `
+            <div class="alert alert-success py-2 mb-0 mt-2 d-flex align-items-center justify-content-between w-100">
+                <div><i class="bi bi-check2-circle me-1"></i> Hồ sơ đã hoàn tất lệ phí và sẵn sàng xét trúng tuyển!</div>
+                <a href="/receipt/${currentTxCode}" target="_blank" class="btn btn-sm btn-primary">
+                    <i class="bi bi-printer me-1"></i> In Biên Lai Điện Tử
+                </a>
+            </div>
+        `;
     } else {
-        badge.innerHTML = '<span class="badge bg-danger fs-6">CHƯA THANH TOÁN</span>';
+        badge.innerHTML = '<span class="badge bg-danger fs-6"><i class="bi bi-x-circle"></i> CHƯA THANH TOÁN</span>';
         btnArea.innerHTML = `
             <button class="btn btn-warning fw-bold" onclick="simulatePay()">
                 <i class="bi bi-cash-coin"></i> Giả Lập Thanh Toán Thành Công (Demo)

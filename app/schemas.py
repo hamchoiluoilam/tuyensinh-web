@@ -50,6 +50,10 @@ class MajorOut(BaseModel):
     class Config:
         from_attributes = True
 
+class MajorUpdateQuota(BaseModel):
+    quota: int
+    benchmark_score: Optional[float] = None
+
 class MajorDetailOut(MajorOut):
     subjects: List[SubjectOut] = []
 
@@ -65,7 +69,8 @@ class ApplicationCreate(BaseModel):
     phone: str
     method: str # HOC_BA or THPT
     score: float
-    major_id: int
+    major_id: int # Nguyện vọng 1
+    major_nv2_id: Optional[int] = None # Nguyện vọng 2
     proof_url: Optional[str] = None
     user_id: Optional[int] = None
 
@@ -83,8 +88,10 @@ class ApplicationOut(BaseModel):
     score: float
     status: str
     major_id: int
-    user_id: Optional[int]
-    proof_url: Optional[str]
+    major_nv2_id: Optional[int] = None
+    admitted_major_name: Optional[str] = None
+    user_id: Optional[int] = None
+    proof_url: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -95,6 +102,11 @@ class ApplicationOut(BaseModel):
 class PaymentCreate(BaseModel):
     application_id: int
     method: Optional[str] = "QR_CHUYEN_KHOAN"
+
+class FeeConfigUpdate(BaseModel):
+    amount: float
+    fee_name: Optional[str] = None
+    description: Optional[str] = None
 
 class PaymentSimulate(BaseModel):
     tx_code: str
@@ -152,3 +164,7 @@ class TicketOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class AIChatQuery(BaseModel):
+    query: str
+    score: Optional[float] = None
