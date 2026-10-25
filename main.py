@@ -25,7 +25,8 @@ except Exception as e:
 app = FastAPI(
     title="Hệ Thống Tuyển Sinh & Tư Vấn Nhập Học Trực Tuyến",
     description="Đồ án Web Python 3 Phân hệ: M02 (Tuyển sinh) + M07 (Tài chính - Lệ phí) + M12 (Hỗ trợ người học)",
-    version="2.0.0"
+    version="2.0.0",
+    redirect_slashes=False
 )
 
 # Cấu hình Static Files cho Uploads & Assets
