@@ -19,7 +19,10 @@ from .auth import get_current_user_from_req
 router = APIRouter(prefix="/api/admissions", tags=["M02 - Tuyển sinh (Người 1)"])
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+except Exception:
+    pass
 
 def mask_id_card(id_card: str) -> str:
     """Che giấu số CCCD bảo vệ quyền riêng tư (VD: 0012******11)"""

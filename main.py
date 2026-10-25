@@ -11,10 +11,16 @@ from app.routers.auth import hash_password
 
 # Tạo thư mục upload ảnh thật nếu chưa có
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "app", "static", "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+except Exception:
+    pass
 
-# Tạo bảng dữ liệu
-Base.metadata.create_all(bind=engine)
+# Tạo bảng dữ liệu an toàn
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"[DB Init Notice] {e}")
 
 app = FastAPI(
     title="Hệ Thống Tuyển Sinh & Tư Vấn Nhập Học Trực Tuyến",
