@@ -172,6 +172,7 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto ms-lg-3">
+                    {% block nav_items %}
                     <li class="nav-item">
                         <a class="nav-link" href="/"><i class="bi bi-house-door me-1"></i> Trang Chủ</a>
                     </li>
@@ -181,6 +182,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/admin"><i class="bi bi-shield-lock me-1"></i> Cổng Quản Trị</a>
                     </li>
+                    {% endblock %}
                 </ul>
 
                 <!-- Auth Buttons / User Profile -->

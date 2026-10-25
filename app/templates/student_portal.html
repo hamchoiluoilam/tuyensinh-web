@@ -17,11 +17,6 @@
                 </div>
             </div>
         </div>
-        <div>
-            <a href="/logout" class="btn btn-outline-danger btn-sm">
-                <i class="bi bi-box-arrow-right"></i> Đăng xuất
-            </a>
-        </div>
     </div>
 </div>
 
@@ -68,150 +63,163 @@
                             <button class="btn btn-primary btn-sm fw-bold" onclick="switchToApplyTab()">Nộp hồ sơ ngay bây giờ &raquo;</button>
                         </div>
                     {% else %}
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Mã Hồ Sơ</th>
-                                        <th>Nguyện Vọng</th>
-                                        <th>Phương Thức & Tổ Hợp</th>
-                                        <th>Điểm Xét Tuyển</th>
-                                        <th>Minh Chứng & Điểm Chi Tiết</th>
-                                        <th>Trạng Thái Hồ Sơ</th>
-                                        <th>Lệ Phí (M07)</th>
-                                        <th>Hành Động</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for app in my_applications %}
-                                    <tr>
-                                        <td><strong>{{ app.app_code }}</strong></td>
-                                        <td>
-                                            <div><span class="badge bg-primary">NV1</span> <strong>{{ app.major.name }}</strong> ({{ app.major.code }})</div>
-                                            {% if app.major_nv2 %}
-                                            <div class="text-muted small mt-1"><span class="badge bg-secondary">NV2</span> {{ app.major_nv2.name }} ({{ app.major_nv2.code }})</div>
+                        <div class="d-flex flex-column gap-3">
+                            {% for app in my_applications %}
+                            <div class="card card-custom p-4 border border-light-subtle shadow-sm">
+                                <!-- Hàng tiêu đề hồ sơ: Mã hồ sơ, phương thức, tình trạng lệ phí và trạng thái -->
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-3 mb-3 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary fs-6 px-3 py-2 font-monospace fw-bold">
+                                            <i class="bi bi-hash"></i>{{ app.app_code }}
+                                        </span>
+                                        <span class="badge bg-dark px-3 py-2">
+                                            {{ app.method_code or app.method }}
+                                        </span>
+                                        <span class="text-muted small">
+                                            {{ app.method_name or '' }}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        {% if app.payment and app.payment.status == 'PAID' %}
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-semibold">
+                                                <i class="bi bi-check-circle-fill me-1"></i> Lệ phí: Đã nộp đủ
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill fw-semibold">
+                                                <i class="bi bi-exclamation-circle-fill me-1"></i> Lệ phí: Chưa thanh toán
+                                            </span>
+                                        {% endif %}
+
+                                        {% if app.status == 'CHO_DUYET' %}
+                                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-semibold"><i class="bi bi-hourglass-split me-1"></i> Chờ xét duyệt</span>
+                                        {% elif app.status == 'HOP_LE' %}
+                                            <span class="badge bg-primary px-3 py-2 rounded-pill fw-semibold"><i class="bi bi-patch-check-fill me-1"></i> Hồ sơ Hợp Lệ</span>
+                                        {% elif app.status in ['TRUNG_TUYEN_NV1', 'TRUNG_TUYEN_NV2', 'TRUNG_TUYEN'] %}
+                                            <span class="badge bg-success px-3 py-2 rounded-pill fs-6 fw-bold"><i class="bi bi-award-fill me-1"></i> TRÚNG TUYỂN 🎉</span>
+                                        {% elif app.status == 'DA_NHAP_HOC' %}
+                                            <span class="badge bg-success px-3 py-2 rounded-pill fs-6 fw-bold"><i class="bi bi-mortarboard-fill me-1"></i> ĐÃ NHẬP HỌC</span>
+                                        {% elif app.status == 'DA_RUT' %}
+                                            <span class="badge bg-secondary px-3 py-2 rounded-pill"><i class="bi bi-dash-circle me-1"></i> Đã rút hồ sơ</span>
+                                        {% elif app.status == 'KHONG_TRUNG_TUYEN' %}
+                                            <span class="badge bg-danger px-3 py-2 rounded-pill"><i class="bi bi-x-circle me-1"></i> Không trúng tuyển</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary px-3 py-2 rounded-pill">{{ app.status }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Hàng nội dung chính: 3 cột thoáng đãng -->
+                                <div class="row g-3 align-items-center">
+                                    <!-- Cột 1: Thông tin nguyện vọng -->
+                                    <div class="col-lg-5">
+                                        <div class="mb-2">
+                                            <span class="badge bg-primary me-2">NV1</span>
+                                            <strong class="fs-6 text-dark">{{ app.major.name }}</strong>
+                                            <span class="text-muted small">({{ app.major.code }})</span>
+                                        </div>
+                                        {% if app.major_nv2 %}
+                                        <div class="mb-2 text-muted">
+                                            <span class="badge bg-secondary me-2">NV2</span>
+                                            <span>{{ app.major_nv2.name }}</span>
+                                            <span class="small">({{ app.major_nv2.code }})</span>
+                                        </div>
+                                        {% endif %}
+                                        {% if app.admitted_major_name %}
+                                        <div class="alert alert-success py-2 px-3 mb-0 mt-2 small fw-bold">
+                                            <i class="bi bi-check-circle-fill text-success me-1"></i> Trúng tuyển chính thức: {{ app.admitted_major_name }}
+                                            {% if app.student_code %}
+                                            <div class="text-dark fw-bold mt-1"><i class="bi bi-person-badge text-primary me-1"></i> MSSV: {{ app.student_code }}</div>
                                             {% endif %}
-                                            {% if app.admitted_major_name %}
-                                            <div class="text-success fw-bold small mt-1"><i class="bi bi-check-circle-fill"></i> Trúng tuyển: {{ app.admitted_major_name }}</div>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-dark">{{ app.method_code or app.method }}</span>
-                                            <div class="small text-muted mt-1">{{ app.method_name or '' }}</div>
-                                            {% if app.subject_combination %}
-                                            <div class="small mt-1"><span class="badge bg-light text-dark border">{{ app.subject_combination }}</span></div>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-warning text-dark fs-6">{{ app.score }}</span>
+                                        </div>
+                                        {% endif %}
+                                        {% if app.officer_note %}
+                                        <div class="text-danger small mt-2">
+                                            <i class="bi bi-chat-left-dots me-1"></i> Ghi chú: {{ app.officer_note }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Cột 2: Điểm số & Minh chứng -->
+                                    <div class="col-lg-4 border-start ps-lg-4">
+                                        <div class="d-flex align-items-baseline gap-2 mb-1">
+                                            <span class="small text-muted">Tổng điểm xét tuyển:</span>
+                                            <span class="fs-4 fw-bold text-primary">{{ app.score }}</span>
+                                            <span class="small text-muted">điểm</span>
+                                        </div>
+                                        <div class="small text-muted mb-2">
+                                            <i class="bi bi-journal-check me-1"></i> Tổ hợp: <strong>{{ app.subject_combination or '---' }}</strong>
                                             {% if app.priority_area and app.priority_score > 0 %}
-                                            <div class="small text-muted mt-1"><i class="bi bi-geo-alt"></i> {{ app.priority_area }} (+{{ app.priority_score }})</div>
+                                            | KV: <strong>{{ app.priority_area }} (+{{ app.priority_score }})</strong>
                                             {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="d-flex flex-column gap-1">
-                                                <button class="btn btn-sm btn-outline-primary" onclick="viewScoreDetails('{{ app.app_code }}', '{{ app.full_name }}', '{{ app.method_name or app.method }}', '{{ app.subject_combination or '' }}', '{{ app.priority_area or '' }}', {{ app.priority_score or 0 }}, {{ app.score }}, '{{ app.proof_url or '' }}', '{{ (app.officer_note or '')|replace('\'', '\\\'') }}', {{ (app.score_details or '{}')|tojson }})">
-                                                    <i class="bi bi-card-checklist"></i> Chi tiết điểm
-                                                </button>
-                                                {% if app.proof_url %}
-                                                <a href="{{ app.proof_url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Xem ảnh học bạ / chứng chỉ">
-                                                    <i class="bi bi-file-earmark-image"></i> Minh chứng
-                                                </a>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {% if app.status == 'CHO_DUYET' %}
-                                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Chờ xét duyệt</span>
-                                            {% elif app.status == 'HOP_LE' %}
-                                                <span class="badge bg-primary"><i class="bi bi-patch-check"></i> Hồ sơ Hợp Lệ</span>
-                                            {% elif app.status == 'TRUNG_TUYEN_NV1' %}
-                                                <span class="badge bg-success fw-bold fs-6">TRÚNG TUYỂN NV1 🎉</span>
-                                            {% elif app.status == 'TRUNG_TUYEN_NV2' %}
-                                                <span class="badge bg-info text-dark fw-bold fs-6">TRÚNG TUYỂN NV2 🎉</span>
-                                            {% elif app.status == 'TRUNG_TUYEN' %}
-                                                <span class="badge bg-success fw-bold fs-6">TRÚNG TUYỂN 🎉</span>
-                                            {% elif app.status == 'DA_NHAP_HOC' %}
-                                                <span class="badge bg-success fw-bold fs-6"><i class="bi bi-mortarboard-fill"></i> ĐÃ NHẬP HỌC</span>
-                                                <div class="small text-success fw-bold mt-1">MSSV: {{ app.student_code }}</div>
-                                            {% elif app.status == 'DA_RUT' %}
-                                                <span class="badge bg-secondary"><i class="bi bi-dash-circle"></i> Đã rút hồ sơ</span>
-                                            {% elif app.status == 'KHONG_TRUNG_TUYEN' %}
-                                                <span class="badge bg-danger">Không trúng tuyển</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">{{ app.status }}</span>
+                                        </div>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="openScoreModalById({{ app.id }})">
+                                                <i class="bi bi-card-checklist me-1"></i> Chi tiết điểm
+                                            </button>
+                                            {% if app.proof_url %}
+                                            <a href="{{ app.proof_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-file-earmark-image me-1"></i> Xem minh chứng
+                                            </a>
                                             {% endif %}
                                             {% if app.appeal_status == 'PENDING' %}
-                                            <div class="small mt-1"><span class="badge bg-warning text-dark"><i class="bi bi-clock-history"></i> Đang phúc khảo</span></div>
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i> Đang phúc khảo</span>
                                             {% elif app.appeal_status == 'APPROVED' %}
-                                            <div class="small mt-1"><span class="badge bg-success"><i class="bi bi-check2"></i> Phúc khảo thành công</span></div>
+                                            <span class="badge bg-success"><i class="bi bi-check2 me-1"></i> Phúc khảo thành công</span>
                                             {% endif %}
-                                            {% if app.officer_note %}
-                                            <div class="small text-danger mt-1"><i class="bi bi-chat-left-dots"></i> {{ app.officer_note }}</div>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if app.payment and app.payment.status == 'PAID' %}
-                                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Đã Nộp Đủ</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Cột 3: Tác nghiệp & Nút bấm -->
+                                    <div class="col-lg-3 text-lg-end">
+                                        <div class="d-flex flex-column gap-2">
+                                            {% if not app.payment or app.payment.status != 'PAID' %}
+                                                <button type="button" class="btn btn-sm btn-danger fw-bold py-2 shadow-sm" onclick="switchToPay('{{ app.app_code }}')">
+                                                    <i class="bi bi-qr-code me-1"></i> Nộp Lệ Phí VietQR
+                                                </button>
                                             {% else %}
-                                                <span class="badge bg-danger"><i class="bi bi-exclamation-circle"></i> Chưa Nộp</span>
+                                                <div class="d-flex gap-1">
+                                                    <button type="button" class="btn btn-sm btn-outline-success flex-fill" onclick="switchToPay('{{ app.app_code }}')">
+                                                        <i class="bi bi-eye me-1"></i> VietQR
+                                                    </button>
+                                                    <a href="/receipt/{{ app.payment.tx_code }}" target="_blank" class="btn btn-sm btn-outline-primary flex-fill">
+                                                        <i class="bi bi-printer me-1"></i> Biên lai
+                                                    </a>
+                                                </div>
                                             {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="d-flex flex-column gap-1">
-                                                {% if not app.payment or app.payment.status != 'PAID' %}
-                                                    <button class="btn btn-sm btn-outline-danger fw-bold" onclick="switchToPay('{{ app.app_code }}')">
-                                                        <i class="bi bi-qr-code"></i> Nộp Lệ Phí
-                                                    </button>
-                                                {% else %}
-                                                    <div class="btn-group btn-group-sm">
-                                                        <button class="btn btn-outline-success" onclick="switchToPay('{{ app.app_code }}')">
-                                                            <i class="bi bi-eye"></i> Chi tiết
-                                                        </button>
-                                                        <a href="/receipt/{{ app.payment.tx_code }}" target="_blank" class="btn btn-outline-primary" title="In Phiếu Thu / Biên Lai Điện Tử">
-                                                            <i class="bi bi-printer"></i> Biên lai
-                                                        </a>
-                                                    </div>
-                                                {% endif %}
 
-                                                <!-- Nút Xác nhận nhập học cho thí sinh trúng tuyển -->
-                                                {% if app.status in ['TRUNG_TUYEN_NV1', 'TRUNG_TUYEN_NV2', 'TRUNG_TUYEN'] %}
-                                                    <button class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm" onclick="confirmEnroll('{{ app.id }}', '{{ app.app_code }}', '{{ app.admitted_major_name or app.major.name }}')">
-                                                        <i class="bi bi-mortarboard-fill"></i> Xác Nhận Nhập Học
-                                                    </button>
-                                                {% endif %}
+                                            {% if app.status in ['TRUNG_TUYEN_NV1', 'TRUNG_TUYEN_NV2', 'TRUNG_TUYEN'] %}
+                                                <button type="button" class="btn btn-sm btn-success fw-bold py-2 shadow-sm" onclick="confirmEnroll('{{ app.id }}', '{{ app.app_code }}', '{{ app.admitted_major_name or app.major.name }}')">
+                                                    <i class="bi bi-mortarboard-fill me-1"></i> Xác Nhận Nhập Học
+                                                </button>
+                                            {% endif %}
 
-                                                <!-- Nút Xem giấy báo nhập học khi đã nhập học -->
-                                                {% if app.status == 'DA_NHAP_HOC' %}
-                                                    <button class="btn btn-sm btn-info text-white fw-bold text-nowrap" onclick="openCertificateModal('{{ app.app_code }}')">
-                                                        <i class="bi bi-award-fill"></i> Giấy Báo Nhập Học
-                                                    </button>
-                                                {% endif %}
+                                            {% if app.status == 'DA_NHAP_HOC' %}
+                                                <button type="button" class="btn btn-sm btn-info text-white fw-bold py-2" onclick="openCertificateModal('{{ app.app_code }}')">
+                                                    <i class="bi bi-award-fill me-1"></i> Giấy Báo Nhập Học
+                                                </button>
+                                            {% endif %}
 
-                                                <!-- Nút Sửa / Rút hồ sơ khi còn ở trạng thái CHO_DUYET -->
-                                                {% if app.status == 'CHO_DUYET' %}
-                                                    <div class="btn-group btn-group-sm">
-                                                        <button class="btn btn-outline-warning" onclick="openEditAppModal('{{ app.id }}', '{{ app.app_code }}', {{ app.major_id }}, {{ app.major_nv2_id or 'null' }})">
-                                                            <i class="bi bi-pencil-square"></i> Sửa
-                                                        </button>
-                                                        <button class="btn btn-outline-danger" onclick="confirmWithdraw('{{ app.id }}', '{{ app.app_code }}')">
-                                                            <i class="bi bi-x-circle"></i> Rút
-                                                        </button>
-                                                    </div>
-                                                {% endif %}
-
-                                                <!-- Nút Phúc khảo nếu không trúng tuyển hoặc bị từ chối -->
-                                                {% if app.status in ['TU_CHOI', 'KHONG_TRUNG_TUYEN'] and app.appeal_status != 'PENDING' %}
-                                                    <button class="btn btn-sm btn-outline-danger text-nowrap" onclick="openAppealModal('{{ app.id }}', '{{ app.app_code }}')">
-                                                        <i class="bi bi-patch-question"></i> Nộp Phúc Khảo
+                                            {% if app.status == 'CHO_DUYET' %}
+                                                <div class="d-flex gap-1">
+                                                    <button type="button" class="btn btn-sm btn-outline-warning flex-fill" onclick="openEditAppModal('{{ app.id }}', '{{ app.app_code }}', {{ app.major_id }}, {{ app.major_nv2_id or 'null' }})">
+                                                        <i class="bi bi-pencil-square me-1"></i> Đổi NV
                                                     </button>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger flex-fill" onclick="confirmWithdraw('{{ app.id }}', '{{ app.app_code }}')">
+                                                        <i class="bi bi-x-circle me-1"></i> Rút HS
+                                                    </button>
+                                                </div>
+                                            {% endif %}
+
+                                            {% if app.status in ['TU_CHOI', 'KHONG_TRUNG_TUYEN'] and app.appeal_status != 'PENDING' %}
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="openAppealModal('{{ app.id }}', '{{ app.app_code }}')">
+                                                    <i class="bi bi-patch-question me-1"></i> Nộp Phúc Khảo
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     {% endif %}
                 </div>
@@ -245,7 +253,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Email nhận thông báo (*)</label>
-                                <input type="email" id="app_email" class="form-control" required value="{{ user.email }}" readonly>
+                                <input type="email" id="app_email" class="form-control" required value="{{ user.email }}" placeholder="Nhập email nhận thông báo tuyển sinh">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Số điện thoại (*)</label>
@@ -1256,6 +1264,34 @@ async function handleApply(e) {
     } finally {
         btn.disabled = false;
     }
+}
+
+// Dữ liệu hồ sơ an toàn cho chi tiết điểm
+window.myApplicationsData = {
+    {% for app in my_applications %}
+    {{ app.id }}: {
+        id: {{ app.id }},
+        appCode: {{ app.app_code|tojson }},
+        fullName: {{ app.full_name|tojson }},
+        methodName: {{ (app.method_name or app.method)|tojson }},
+        combo: {{ (app.subject_combination or '')|tojson }},
+        priorityArea: {{ (app.priority_area or '')|tojson }},
+        priorityScore: {{ app.priority_score or 0 }},
+        score: {{ app.score or 0 }},
+        proofUrl: {{ (app.proof_url or '')|tojson }},
+        officerNote: {{ (app.officer_note or '')|tojson }},
+        scoreDetails: {{ (app.score_details or {})|tojson }}
+    },
+    {% endfor %}
+};
+
+function openScoreModalById(appId) {
+    const app = window.myApplicationsData[appId];
+    if (!app) {
+        console.error("Không tìm thấy hồ sơ ID:", appId);
+        return;
+    }
+    viewScoreDetails(app.appCode, app.fullName, app.methodName, app.combo, app.priorityArea, app.priorityScore, app.score, app.proofUrl, app.officerNote, app.scoreDetails);
 }
 
 // --- MODAL XEM CHI TIẾT ĐIỂM THÍ SINH ---

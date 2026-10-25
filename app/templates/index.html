@@ -3,87 +3,114 @@
 {% block title %}Trang Chủ - Cổng Tuyển Sinh Đại Học 2026{% endblock %}
 
 {% block content %}
-<!-- Modern Hero Section -->
-<div class="p-5 mb-5 rounded-4 shadow-sm text-white position-relative overflow-hidden" 
-     style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);">
+<!-- Modern Hero Banner: Tuyển Sinh 2026 -->
+<div class="p-4 p-md-5 mb-5 rounded-4 shadow-sm text-white position-relative overflow-hidden" 
+     style="background: linear-gradient(135deg, #091e42 0%, #1e40af 50%, #2563eb 100%);">
     
     <!-- Background subtle circles -->
-    <div style="position: absolute; right: -50px; top: -50px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%); border-radius: 50%;"></div>
+    <div style="position: absolute; right: -50px; top: -50px; width: 350px; height: 350px; background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%); border-radius: 50%;"></div>
+    <div style="position: absolute; left: 20%; bottom: -80px; width: 250px; height: 250px; background: radial-gradient(circle, rgba(96,165,250,0.15) 0%, transparent 70%); border-radius: 50%;"></div>
     
-    <div class="container-fluid py-2 position-relative" style="z-index: 2;">
-        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-10 mb-3">
-            <span class="badge bg-warning text-dark badge-pill">Mùa Tuyển Sinh 2026</span>
-            <span class="small text-white-50">Cổng tiếp nhận hồ sơ xét tuyển chính thức</span>
+    <div class="container-fluid py-3 position-relative" style="z-index: 2;">
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-15 border border-white border-opacity-20 mb-3">
+            <span class="badge bg-warning text-dark badge-pill fw-bold">KHÓA 68 - MÙA TUYỂN SINH 2026</span>
+            <span class="small text-white">Cổng Tiếp Nhận Hồ Sơ & Xét Tuyển Trực Tuyến</span>
         </div>
         
-        <h1 class="display-6 fw-bold mb-3" style="letter-spacing: -0.5px;">Cổng Thông Tin Tuyển Sinh & Tư Vấn Nhập Học</h1>
-        <p class="col-md-9 fs-5 text-white-50 mb-4" style="line-height: 1.6;">
-            Hệ thống giải quyết trọn vẹn quy trình tuyển sinh: Nộp hồ sơ xét tuyển trực tuyến, thanh toán lệ phí tức thì qua chuẩn <strong>VietQR</strong>, 
-            và khám phá khung chương trình đào tạo của <strong>40 ngành học</strong> với đầy đủ môn đại cương và chuyên ngành.
+        <h1 class="display-5 fw-extrabold mb-3" style="letter-spacing: -0.5px; line-height: 1.25;">
+            Khẳng Định Bản Thân - Chinh Phục Tương Lai<br>
+            <span class="text-warning">Cùng Đại Học Kinh Tế Quốc Dân</span>
+        </h1>
+        <p class="col-lg-10 fs-5 text-white-50 mb-4" style="line-height: 1.7;">
+            Chào mừng bạn đến với Cổng tuyển sinh đại học chính quy 2026. Tự tin lựa chọn trong <strong>40 ngành đào tạo mũi nhọn</strong>, 
+            phương thức xét tuyển linh hoạt (Điểm thi THPT, Đánh giá năng lực HSA/TSA, Kết hợp chứng chỉ quốc tế IELTS/SAT), 
+            và nhận hỗ trợ tư vấn tức thì 24/7 từ <strong>Trợ lý Tuyển sinh AI</strong>.
         </p>
+
+        <!-- Admission Highlights Badges -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <span class="badge bg-white bg-opacity-15 text-white px-3 py-2 rounded-pill fs-6 fw-normal">
+                <i class="bi bi-mortarboard-fill text-warning me-1"></i> 40 Ngành Đào Tạo Tiên Tiến
+            </span>
+            <span class="badge bg-white bg-opacity-15 text-white px-3 py-2 rounded-pill fs-6 fw-normal">
+                <i class="bi bi-people-fill text-info me-1"></i> Chỉ Tiêu Hơn 6.200 Sinh Viên
+            </span>
+            <span class="badge bg-white bg-opacity-15 text-white px-3 py-2 rounded-pill fs-6 fw-normal">
+                <i class="bi bi-patch-check-fill text-success me-1"></i> 4 Phương Thức Xét Tuyển Linh Hoạt
+            </span>
+            <span class="badge bg-white bg-opacity-15 text-white px-3 py-2 rounded-pill fs-6 fw-normal">
+                <i class="bi bi-qr-code text-warning me-1"></i> Thanh Toán Lệ Phí Tự Động VietQR
+            </span>
+        </div>
 
         <div class="d-flex gap-3 flex-wrap align-items-center">
             {% if user and user.role == 'STUDENT' %}
-                <a href="/student" class="btn btn-modern-accent px-4 py-3 fs-6">
+                <a href="/student" class="btn btn-warning text-dark px-4 py-3 fs-6 fw-bold rounded-3 shadow">
                     <i class="bi bi-speedometer2 me-1"></i> Truy Cập Cổng Thí Sinh Của Bạn
                 </a>
             {% else %}
-                <a href="/register" class="btn btn-modern-accent px-4 py-3 fs-6">
-                    <i class="bi bi-pencil-square me-1"></i> Đăng Ký Tài Khoản & Nộp Hồ Sơ
+                <a href="/register" class="btn btn-warning text-dark px-4 py-3 fs-6 fw-bold rounded-3 shadow">
+                    <i class="bi bi-pencil-square me-1"></i> Đăng Ký Tài Khoản & Nộp Hồ Sơ Ngay
                 </a>
                 <a href="/login" class="btn btn-outline-light px-4 py-3 fs-6 rounded-3 fw-semibold">
-                    <i class="bi bi-box-arrow-in-right me-1"></i> Đăng Nhập
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Đăng Nhập Cổng Thí Sinh
                 </a>
             {% endif %}
-            <a href="#lookup-section" class="btn btn-link text-white text-decoration-none px-2 fw-medium">
-                <i class="bi bi-search me-1"></i> Tra cứu kết quả hồ sơ &raquo;
+            <a href="#majors-list" class="btn btn-outline-light border-0 px-3 py-3 fs-6 text-white text-decoration-none">
+                <i class="bi bi-arrow-down-circle me-1"></i> Khám Phá 40 Ngành Đào Tạo &raquo;
             </a>
         </div>
     </div>
 </div>
 
-<!-- Tra cứu nhanh hồ sơ công khai (Xác minh danh tính 2 yếu tố 2FA & Bảo mật dữ liệu) -->
-<div id="lookup-section" class="row justify-content-center mb-5">
-    <div class="col-lg-10">
-        <div class="card card-modern p-4 border-start border-primary border-4 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+<!-- Tra cứu nhanh hồ sơ công khai (Xác minh danh tính 2 yếu tố 2FA & Bảo mật dữ liệu - Làm rộng vừa tỉ lệ màn hình) -->
+<div id="lookup-section" class="row mb-5">
+    <div class="col-12">
+        <div class="card card-modern p-4 p-lg-5 border-start border-primary border-4 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="bg-primary bg-opacity-10 p-2 rounded-circle text-primary">
-                        <i class="bi bi-shield-check fs-4"></i>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary">
+                        <i class="bi bi-shield-check fs-3"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold mb-0 text-dark">Tra Cứu Kết Quả Xét Tuyển & Tình Trạng Hồ Sơ</h5>
-                        <small class="text-muted"><i class="bi bi-lock-fill text-success"></i> Bảo mật 2 lớp: Yêu cầu xác minh Mã hồ sơ & 4 số cuối CCCD</small>
+                        <h4 class="fw-bold mb-1 text-dark">Tra Cứu Kết Quả Xét Tuyển & Tình Trạng Hồ Sơ</h4>
+                        <p class="text-muted small mb-0"><i class="bi bi-lock-fill text-success"></i> Bảo mật 2 lớp: Yêu cầu xác minh chính xác <strong>Mã hồ sơ xét tuyển</strong> kết hợp <strong>4 số cuối số CCCD</strong> của thí sinh</p>
                     </div>
                 </div>
-                <span class="badge bg-light text-dark border"><i class="bi bi-info-circle me-1"></i> Chuẩn Bảo Mật Dữ Liệu</span>
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill"><i class="bi bi-shield-lock text-primary me-1"></i> Tra Cứu Trực Tuyến An Toàn</span>
             </div>
             
             <form onsubmit="handleSecureLookup(event)">
-                <div class="row g-2 align-items-end">
+                <div class="row g-3 align-items-end">
                     <div class="col-md-5">
                         <label class="form-label small fw-semibold text-muted mb-1">Mã hồ sơ xét tuyển (*)</label>
-                        <input type="text" id="lookupAppCode" class="form-control" placeholder="Ví dụ: TS2026-100001" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-semibold text-muted mb-1">4 số cuối CCCD (*)</label>
-                        <input type="text" id="lookupIdLast4" class="form-control" maxlength="4" placeholder="VD: 1111" required pattern="\d{4}">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-file-earmark-text"></i></span>
+                            <input type="text" id="lookupAppCode" class="form-control form-control-lg" placeholder="Ví dụ: TS2026-100001" required>
+                        </div>
                     </div>
                     <div class="col-md-4">
-                        <button type="submit" class="btn btn-primary w-100 fw-bold">
-                            <i class="bi bi-shield-lock me-1"></i> Xác Minh & Tra Cứu
+                        <label class="form-label small fw-semibold text-muted mb-1">4 số cuối CCCD (*)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-person-vcard"></i></span>
+                            <input type="text" id="lookupIdLast4" class="form-control form-control-lg" maxlength="4" placeholder="VD: 1111" required pattern="\d{4}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm">
+                            <i class="bi bi-search me-1"></i> Tra Cứu Kết Quả
                         </button>
                     </div>
                 </div>
             </form>
             
-            <div id="lookupResult" class="d-none mt-3"></div>
+            <div id="lookupResult" class="d-none mt-4"></div>
         </div>
     </div>
 </div>
 
 <!-- Danh mục 40 ngành tuyển sinh (M02) -->
-<div class="mb-5">
+<div class="mb-5" id="majors-list">
     <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
         <div>
             <div class="text-primary fw-bold text-uppercase small tracking-wide mb-1">Chương Trình Đào Tạo</div>

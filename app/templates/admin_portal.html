@@ -2,6 +2,27 @@
 
 {% block title %}Cổng Quản Trị Tuyển Sinh (Admin Portal){% endblock %}
 
+{% block nav_items %}
+<li class="nav-item">
+    <a class="nav-link text-white-50" href="/"><i class="bi bi-house-door me-1"></i> Trang Chủ</a>
+</li>
+<li class="nav-item">
+    <button type="button" class="nav-link active btn btn-link text-decoration-none border-0 text-start fw-bold" id="header-tab-m02" onclick="switchAdminTab('pane-m02', this)">
+        <i class="bi bi-mortarboard-fill text-warning me-1"></i> Tuyển sinh và lọc ảo
+    </button>
+</li>
+<li class="nav-item">
+    <button type="button" class="nav-link btn btn-link text-decoration-none border-0 text-start fw-bold" id="header-tab-m07" onclick="switchAdminTab('pane-m07', this)">
+        <i class="bi bi-wallet2 text-success me-1"></i> Kế toán và lệ phí
+    </button>
+</li>
+<li class="nav-item">
+    <button type="button" class="nav-link btn btn-link text-decoration-none border-0 text-start fw-bold" id="header-tab-m12" onclick="switchAdminTab('pane-m12', this)">
+        <i class="bi bi-headset text-info me-1"></i> Giải đáp & Hỗ trợ
+    </button>
+</li>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -12,9 +33,6 @@
             <h2 class="fw-bold mb-1 text-primary"><i class="bi bi-person-workspace"></i> Cổng Tác Nghiệp Cán Bộ Tuyển Sinh (OFFICER PORTAL)</h2>
             <p class="text-muted mb-0">Quyền hạn: <strong>Cán Bộ Khảo Thí & Tuyển Sinh</strong> | Tiếp nhận hồ sơ, Xét duyệt hợp lệ, Chạy lọc ảo & Hỗ trợ thí sinh</p>
         {% endif %}
-    </div>
-    <div>
-        <a href="/logout" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
     </div>
 </div>
 
@@ -45,25 +63,6 @@
         </div>
     </div>
 </div>
-
-<!-- Nav Tabs for 3 Modules -->
-<ul class="nav nav-tabs mb-4 fw-semibold" id="adminTabs" role="tablist">
-    <li class="nav-item">
-        <button class="nav-link active px-4 py-2" id="tab-adm-m02" data-bs-toggle="tab" data-bs-target="#pane-m02">
-            <i class="bi bi-mortarboard-fill text-primary"></i> Phân Hệ M02: Tuyển Sinh & Lọc Ảo
-        </button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link px-4 py-2" id="tab-adm-m07" data-bs-toggle="tab" data-bs-target="#pane-m07">
-            <i class="bi bi-wallet2 text-success"></i> Phân Hệ M07: Kế Toán & Lệ Phí
-        </button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link px-4 py-2" id="tab-adm-m12" data-bs-toggle="tab" data-bs-target="#pane-m12">
-            <i class="bi bi-headset text-info"></i> Phân Hệ M12: Giải Đáp & Ticket
-        </button>
-    </li>
-</ul>
 
 <div class="tab-content" id="adminTabsContent">
     
@@ -1042,6 +1041,24 @@ async function submitReply() {
         }
     } catch(e) {
         alert("Lỗi kết nối!");
+    }
+}
+
+// Chuyển đổi phân hệ Quản trị từ thanh header
+function switchAdminTab(paneId, btnEl) {
+    document.querySelectorAll('#adminTabsContent .tab-pane').forEach(el => {
+        el.classList.remove('show', 'active');
+    });
+    const target = document.getElementById(paneId);
+    if (target) {
+        target.classList.add('show', 'active');
+    }
+    // Cập nhật trạng thái active trên thanh header
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    if (btnEl) {
+        btnEl.classList.add('active');
     }
 }
 </script>

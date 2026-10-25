@@ -1,11 +1,20 @@
-# Danh mục các môn học đại cương chung (áp dụng cho tất cả 40 ngành)
+# Danh mục các môn học đại cương chung (15 môn, đủ kỳ 1-4, áp dụng cho tất cả 40 ngành)
 COMMON_GENERAL_SUBJECTS = [
     ("GEN101", "Triết học Mác - Lênin", 3, 1, "Đại cương chung", "Thế giới quan và phương pháp luận duy vật biện chứng, quy luật phát triển tự nhiên và xã hội."),
-    ("GEN102", "Tiếng Anh Đại cương 1", 3, 1, "Đại cương chung", "Rèn luyện 4 kỹ năng nghe, nói, đọc, viết tiếng Anh giao tiếp cơ bản."),
-    ("GEN103", "Pháp luật Đại cương", 2, 1, "Đại cương chung", "Nguồn gốc nhà nước, hệ thống pháp luật Việt Nam, quyền và nghĩa vụ công dân."),
+    ("GEN102", "Tiếng Anh Đại cương 1", 3, 1, "Đại cương chung", "Rèn luyện 4 kỹ năng nghe, nói, đọc, viết tiếng Anh giao tiếp chuẩn quốc tế."),
+    ("GEN103", "Pháp luật Đại cương", 2, 1, "Đại cương chung", "Hệ thống pháp luật Việt Nam, nhà nước pháp quyền, quyền và nghĩa vụ công dân."),
+    ("GEN104", "Tin học Đại cương & Kỹ năng số", 3, 1, "Đại cương chung", "Tin học ứng dụng văn phòng nâng cao, an toàn thông tin số và tư duy thuật toán."),
+    ("GEN105", "Toán cao cấp cho các ngành ứng dụng", 3, 1, "Đại cương chung", "Phép tính vi phân, tích phân hàm một biến và nhiều biến ứng dụng thực tế."),
     ("GEN201", "Kinh tế Chính trị Mác - Lênin", 2, 2, "Đại cương chung", "Hàng hóa, tiền tệ, giá trị thặng dư và quy luật kinh tế thị trường định hướng XHCN."),
-    ("GEN202", "Tư tưởng Hồ Chí Minh", 2, 2, "Đại cương chung", "Hệ thống quan điểm toàn diện và sâu sắc của Chủ tịch Hồ Chí Minh về cách mạng Việt Nam."),
-    ("GEN203", "Kỹ năng mềm & Làm việc nhóm", 2, 2, "Đại cương chung", "Kỹ năng thuyết trình, tư duy phản biện, giải quyết xung đột và làm việc nhóm hiệu quả.")
+    ("GEN202", "Tiếng Anh Đại cương 2", 3, 2, "Đại cương chung", "Nâng cao kỹ năng tiếng Anh học thuật, ngữ pháp nâng cao và kỹ năng thuyết trình."),
+    ("GEN203", "Kỹ năng mềm & Làm việc nhóm", 2, 2, "Đại cương chung", "Tư duy phản biện, giải quyết xung đột, kỹ năng lãnh đạo và làm việc nhóm hiệu quả."),
+    ("GEN204", "Đại số tuyến tính & Hình học giải tích", 3, 2, "Đại cương chung", "Không gian vector, ma trận, định thức, hệ phương trình tuyến tính và phép biến đổi."),
+    ("GEN205", "Xác suất & Thống kê ứng dụng", 3, 2, "Đại cương chung", "Lý thuyết xác suất, biến ngẫu nhiên, ước lượng thống kê và kiểm định giả thuyết."),
+    ("GEN301", "Chủ nghĩa Xã hội Khoa học", 2, 3, "Đại cương chung", "Sứ mệnh lịch sử giai cấp công nhân, dân chủ xã hội chủ nghĩa và chính sách dân tộc."),
+    ("GEN302", "Tư tưởng Hồ Chí Minh", 2, 3, "Đại cương chung", "Quan điểm toàn diện của Chủ tịch Hồ Chí Minh về độc lập dân tộc gắn liền với CNXH."),
+    ("GEN303", "Tiếng Anh Chuyên ngành Bậc 1", 3, 3, "Đại cương chung", "Thuật ngữ chuyên môn ngành, đọc hiểu tài liệu học thuật và viết tóm tắt học thuật."),
+    ("GEN401", "Lịch sử Đảng Cộng sản Việt Nam", 2, 4, "Đại cương chung", "Quá trình thành lập, các mốc son lãnh đạo cách mạng và đường lối đổi mới của Đảng."),
+    ("GEN402", "Phương pháp Nghiên cứu Khoa học", 3, 4, "Đại cương chung", "Thiết kế nghiên cứu, thu thập dữ liệu, phân tích định lượng/định tính và viết báo cáo.")
 ]
 
 # Danh mục môn cơ sở và chuyên ngành đặc trưng cho từng ngành
@@ -292,15 +301,23 @@ MAJORS_META = [
 # Tạo danh sách 40 ngành kèm cả Môn Đại Cương Chung và Môn Chuyên Ngành
 MAJORS_40 = []
 for code, name, category, quota, benchmark, desc in MAJORS_META:
-    # Môn đại cương chung (6 môn) + môn chuyên ngành đặc trưng
+    # Môn đại cương chung (15 môn, kỳ 1-4) + môn chuyên ngành đặc trưng (kỳ 3-8)
     specific = MAJOR_SPECIFIC_SUBJECTS.get(code, [
-        (f"SPE-{code[-3:]}-1", f"Cơ sở chuyên ngành {name}", 3, 3, "Cơ sở ngành", f"Kiến thức nền tảng và phương pháp luận ngành {name}."),
-        (f"SPE-{code[-3:]}-2", f"Chuyên đề nâng cao ngành {name}", 4, 5, "Chuyên ngành", f"Ứng dụng thực hành chuyên sâu và giải quyết vấn đề trong ngành {name}."),
-        (f"SPE-{code[-3:]}-3", f"Thực tập doanh nghiệp ngành {name}", 3, 6, "Chuyên ngành", f"Trải nghiệm môi trường làm việc thực tế và cọ xát nghiệp vụ {name}."),
-        (f"SPE-{code[-3:]}-4", f"Đồ án / Khóa luận tốt nghiệp {name}", 10, 8, "Khóa luận tốt nghiệp", f"Đồ án tốt nghiệp tổng hợp kiến thức toàn khóa học {name}.")
+        (f"SPE-{code[-3:]}-31", f"Cơ sở chuyên ngành {name} 1", 3, 3, "Cơ sở ngành", f"Kiến thức nền tảng và phương pháp luận chuyên ngành {name}."),
+        (f"SPE-{code[-3:]}-32", f"Cơ sở chuyên ngành {name} 2", 3, 3, "Cơ sở ngành", f"Mô hình hóa và các công cụ thực nghiệm trong {name}."),
+        (f"SPE-{code[-3:]}-41", f"Lý thuyết chuyên sâu {name}", 3, 4, "Cơ sở ngành", f"Phân tích chuyên sâu các mô hình lý thuyết của {name}."),
+        (f"SPE-{code[-3:]}-42", f"Ứng dụng chuyển đổi số trong {name}", 3, 4, "Cơ sở ngành", f"Áp dụng công nghệ số, dữ liệu và tự động hóa trong {name}."),
+        (f"SPE-{code[-3:]}-51", f"Chuyên đề nâng cao ngành {name}", 4, 5, "Chuyên ngành", f"Ứng dụng thực hành chuyên sâu và giải quyết vấn đề trong {name}."),
+        (f"SPE-{code[-3:]}-52", f"Quản trị dự án & Thực chiến {name}", 3, 5, "Chuyên ngành", f"Kỹ năng lập kế hoạch, triển khai dự án thực tế ngành {name}."),
+        (f"SPE-{code[-3:]}-61", f"Hệ thống thông tin & Phân tích chuyên sâu {name}", 3, 6, "Chuyên ngành", f"Kỹ thuật phân tích, mô phỏng và tối ưu giải pháp {name}."),
+        (f"SPE-{code[-3:]}-62", f"Đồ án thực hành chuyên ngành {name}", 3, 6, "Chuyên ngành", f"Xây dựng đề án / sản phẩm hoàn chỉnh theo nhóm."),
+        (f"SPE-{code[-3:]}-71", f"Khởi nghiệp đổi mới sáng tạo ngành {name}", 3, 7, "Chuyên ngành", f"Tư duy khởi nghiệp, lập kế hoạch kinh doanh và sở hữu trí tuệ."),
+        (f"SPE-{code[-3:]}-72", f"Thực tập doanh nghiệp (OJT) ngành {name}", 4, 7, "Chuyên ngành", f"Trải nghiệm môi trường làm việc thực tế và cọ xát nghiệp vụ {name}."),
+        (f"SPE-{code[-3:]}-81", f"Chuyên đề tốt nghiệp định hướng nghề nghiệp", 4, 8, "Chuyên ngành", f"Phân tích giải pháp thực tiễn trước khi tốt nghiệp."),
+        (f"SPE-{code[-3:]}-82", f"Khóa luận / Đồ án tốt nghiệp ngành {name}", 10, 8, "Khóa luận tốt nghiệp", f"Đồ án tốt nghiệp tổng hợp kiến thức toàn khóa học {name}.")
     ])
     
-    # Kết hợp đầy đủ: Đại cương chung (6 môn) + Chuyên ngành
+    # Kết hợp đầy đủ: Đại cương chung (15 môn) + Chuyên ngành (12-14 môn) = 27-29 môn (~130 TC)
     full_subjects = list(COMMON_GENERAL_SUBJECTS) + specific
     
     MAJORS_40.append({

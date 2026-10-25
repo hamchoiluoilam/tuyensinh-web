@@ -10,54 +10,75 @@
 
     <!-- Major Overview Hero Card -->
     <div class="card card-modern p-4 p-lg-5 bg-white border-0 shadow-sm mb-4 position-relative overflow-hidden">
-        <div style="position: absolute; right: 0; top: 0; width: 250px; height: 100%; background: linear-gradient(135deg, rgba(37,99,235,0.03) 0%, rgba(37,99,235,0.08) 100%); pointer-events: none;"></div>
+        <div style="position: absolute; right: 0; top: 0; width: 300px; height: 100%; background: linear-gradient(135deg, rgba(37,99,235,0.03) 0%, rgba(37,99,235,0.08) 100%); pointer-events: none;"></div>
         
-        <div class="row align-items-center position-relative">
-            <div class="col-lg-8">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <span class="badge bg-primary bg-opacity-10 text-primary font-monospace fs-6 px-3 py-1 rounded-pill fw-bold">{{ major.code }}</span>
-                    <span class="badge bg-light text-muted border px-3 py-1 rounded-pill">{{ major.category }}</span>
-                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill">Đại học Chính quy</span>
+        <div class="position-relative">
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span class="badge bg-primary bg-opacity-10 text-primary font-monospace fs-6 px-3 py-1 rounded-pill fw-bold">{{ major.code }}</span>
+                <span class="badge bg-light text-muted border px-3 py-1 rounded-pill">{{ major.category }}</span>
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill">Đại học Chính quy 4 năm</span>
+                <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 px-3 py-1 rounded-pill">Cấp bằng Cử nhân / Kỹ sư</span>
+            </div>
+            
+            <h2 class="display-6 fw-bold text-dark mb-3 mt-1" style="letter-spacing: -0.5px;">{{ major.name }}</h2>
+            <p class="text-muted fs-5 mb-4" style="line-height: 1.7; max-width: 900px;">{{ major.description }}</p>
+            
+            <!-- 4 Ô SỐ LIỆU NỔI BẬT (FLOATING HIGHLIGHT CARDS) -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="card card-modern p-3 p-md-4 border-0 shadow-sm text-center h-100 bg-white" style="border-top: 4px solid #2563eb !important;">
+                        <div class="d-inline-flex p-2 rounded-circle bg-primary bg-opacity-10 text-primary mb-2 mx-auto">
+                            <i class="bi bi-people-fill fs-4"></i>
+                        </div>
+                        <div class="small text-muted text-uppercase fw-semibold mb-1">Chỉ tiêu 2026</div>
+                        <div class="display-6 fw-bold text-primary mb-0">{{ major.quota }}</div>
+                        <div class="small text-muted">Sinh viên chính quy</div>
+                    </div>
                 </div>
-                
-                <h2 class="fw-bold text-dark mb-3 mt-1" style="letter-spacing: -0.5px;">{{ major.name }}</h2>
-                <p class="text-muted fs-6 mb-4" style="line-height: 1.7; max-width: 680px;">{{ major.description }}</p>
-                
-                <div class="row g-3 text-muted">
-                    <div class="col-6 col-sm-3">
-                        <div class="p-3 rounded-3 bg-light text-center">
-                            <div class="small text-muted mb-1">Chỉ tiêu</div>
-                            <strong class="text-primary fs-5">{{ major.quota }}</strong>
+                <div class="col-6 col-md-3">
+                    <div class="card card-modern p-3 p-md-4 border-0 shadow-sm text-center h-100 bg-white" style="border-top: 4px solid #ef4444 !important;">
+                        <div class="d-inline-flex p-2 rounded-circle bg-danger bg-opacity-10 text-danger mb-2 mx-auto">
+                            <i class="bi bi-trophy-fill fs-4"></i>
                         </div>
+                        <div class="small text-muted text-uppercase fw-semibold mb-1">Điểm chuẩn tham khảo</div>
+                        <div class="display-6 fw-bold text-danger mb-0">{{ major.benchmark_score if major.benchmark_score > 0 else '24.5' }}</div>
+                        <div class="small text-muted">Thang điểm 30</div>
                     </div>
-                    <div class="col-6 col-sm-3">
-                        <div class="p-3 rounded-3 bg-light text-center">
-                            <div class="small text-muted mb-1">Điểm chuẩn</div>
-                            <strong class="text-danger fs-5">{{ major.benchmark_score if major.benchmark_score > 0 else 'Đang cập nhật' }}</strong>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card card-modern p-3 p-md-4 border-0 shadow-sm text-center h-100 bg-white" style="border-top: 4px solid #f59e0b !important;">
+                        <div class="d-inline-flex p-2 rounded-circle bg-warning bg-opacity-10 text-warning mb-2 mx-auto">
+                            <i class="bi bi-journal-bookmark-fill fs-4"></i>
                         </div>
+                        <div class="small text-muted text-uppercase fw-semibold mb-1">Số môn đào tạo</div>
+                        <div class="display-6 fw-bold text-dark mb-0">{{ subjects|length }}</div>
+                        <div class="small text-muted">Học phần xuyên suốt 8 kỳ</div>
                     </div>
-                    <div class="col-6 col-sm-3">
-                        <div class="p-3 rounded-3 bg-light text-center">
-                            <div class="small text-muted mb-1">Tổng số môn</div>
-                            <strong class="text-dark fs-5">{{ subjects|length }} môn</strong>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card card-modern p-3 p-md-4 border-0 shadow-sm text-center h-100 bg-white" style="border-top: 4px solid #10b981 !important;">
+                        <div class="d-inline-flex p-2 rounded-circle bg-success bg-opacity-10 text-success mb-2 mx-auto">
+                            <i class="bi bi-mortarboard-fill fs-4"></i>
                         </div>
-                    </div>
-                    <div class="col-6 col-sm-3">
-                        <div class="p-3 rounded-3 bg-light text-center">
-                            <div class="small text-muted mb-1">Tổng tín chỉ</div>
-                            <strong class="text-success fs-5">{{ total_credits }} TC</strong>
-                        </div>
+                        <div class="small text-muted text-uppercase fw-semibold mb-1">Tổng số tín chỉ</div>
+                        <div class="display-6 fw-bold text-success mb-0">{{ total_credits }}</div>
+                        <div class="small text-muted">Tín chỉ tích lũy</div>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
-                <div class="card p-3 border rounded-4 bg-light bg-opacity-50 text-center">
-                    <h6 class="fw-bold mb-2">Sẵn sàng nhập học ngành này?</h6>
-                    <p class="small text-muted mb-3">Nộp hồ sơ xét tuyển ngay hôm nay để được xét tuyển ưu tiên đợt 1.</p>
-                    <a href="/student" class="btn btn-modern-accent py-3 fw-bold w-100 shadow-sm">
-                        <i class="bi bi-pencil-square me-1"></i> Đăng Ký Xét Tuyển Ngay
-                    </a>
+
+            <!-- Ô SẴN SÀNG NHẬP HỌC (ĐẶT Ở DƯỚI Ô SỐ LIỆU, KHÔNG ĐỂ NGANG HÀNG NỮA) -->
+            <div class="card p-4 border rounded-4 bg-light bg-opacity-50 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1"><i class="bi bi-star-fill text-warning me-2"></i> Sẵn sàng trở thành sinh viên ngành {{ major.name }}?</h5>
+                        <p class="text-muted small mb-0">Nộp hồ sơ xét tuyển ngay hôm nay để nhận ưu tiên xét duyệt đợt 1 và xét tuyển học bổng tài năng.</p>
+                    </div>
+                    <div>
+                        <a href="/student" class="btn btn-primary btn-lg px-4 py-2 fw-bold shadow-sm text-nowrap">
+                            <i class="bi bi-pencil-square me-1"></i> Đăng Ký Xét Tuyển Ngành Này
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -111,6 +132,17 @@
             </div>
         </div>
         {% endfor %}
+    </div>
+
+    <!-- Bottom CTA Card -->
+    <div class="card card-modern p-4 p-md-5 mt-5 text-center bg-primary text-white border-0 shadow">
+        <h3 class="fw-bold mb-2">Đăng Ký Xét Tuyển Ngành {{ major.name }} Ngay Hôm Nay!</h3>
+        <p class="fs-6 text-white-50 mb-4" style="max-width: 650px; margin: 0 auto;">Cánh cửa Đại học đang rộng mở chào đón bạn. Nộp hồ sơ trực tuyến thuận tiện, an toàn, minh bạch và tra cứu kết quả tức thì.</p>
+        <div>
+            <a href="/student" class="btn btn-warning text-dark btn-lg px-5 py-3 fw-bold rounded-pill shadow">
+                <i class="bi bi-pencil-square me-2"></i> Bắt Đầu Nộp Hồ Sơ Xét Tuyển &raquo;
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}
