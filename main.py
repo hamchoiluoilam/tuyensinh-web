@@ -23,25 +23,13 @@ app = FastAPI(
 )
 
 from fastapi import Request
-from fastapi.responses import PlainTextResponse, JSONResponse
-import traceback
+from fastapi.responses import PlainTextResponse
+import logging
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    err_tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
-    return PlainTextResponse(f"SERVER ERROR ON {request.url.path}:\n{err_tb}", status_code=500)
-
-@app.get("/debug-env")
-def debug_env():
-    return {
-        "cwd": os.getcwd(),
-        "files_root": os.listdir(os.getcwd()) if os.path.exists(os.getcwd()) else [],
-        "app_exists": os.path.exists("app"),
-        "app_files": os.listdir("app") if os.path.exists("app") else [],
-        "templates_exists": os.path.exists("app/templates"),
-        "templates_files": os.listdir("app/templates") if os.path.exists("app/templates") else [],
-        "database_exists": os.path.exists("/tmp/admission_system.db"),
-    }
+    logging.error(f"Lỗi máy chủ tại {request.url.path}: {exc}", exc_info=True)
+    return PlainTextResponse("Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau.", status_code=500)
 
 # Cấu hình Static Files cho Uploads & Assets với đường dẫn dự phòng đa môi trường (Local / Vercel Serverless)
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app", "static")
