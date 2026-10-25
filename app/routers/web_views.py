@@ -8,7 +8,17 @@ from ..database import get_db
 from ..models import Major, AdmissionApplication, PaymentTransaction, SupportTicket, FAQItem, FeeConfig, User, Subject
 from .auth import decode_access_token
 
-templates_dir = os.path.join(os.path.dirname(__file__), "..", "templates")
+templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "templates")
+if not os.path.exists(templates_dir):
+    for candidate in [
+        os.path.join(os.getcwd(), "app", "templates"),
+        os.path.join(os.getcwd(), "templates"),
+        "/var/task/app/templates",
+        "/var/task/templates"
+    ]:
+        if os.path.exists(candidate):
+            templates_dir = candidate
+            break
 templates = Jinja2Templates(directory=templates_dir)
 
 router = APIRouter(include_in_schema=False)

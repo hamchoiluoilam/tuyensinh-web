@@ -18,7 +18,11 @@ from .auth import get_current_user_from_req
 
 router = APIRouter(prefix="/api/admissions", tags=["M02 - Tuyển sinh (Người 1)"])
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "uploads")
+is_serverless = not os.access(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), os.W_OK) or any(k in os.environ for k in ["VERCEL", "VERCEL_ENV", "AWS_LAMBDA_FUNCTION_NAME", "LAMBDA_TASK_ROOT"])
+if is_serverless:
+    UPLOAD_DIR = "/tmp/uploads"
+else:
+    UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "uploads")
 try:
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 except Exception:
@@ -79,10 +83,17 @@ async def upload_proof_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Chỉ chấp nhận file ảnh (.jpg, .jpeg, .png, .webp) hoặc file PDF!")
     
     unique_name = f"proof_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{random.randint(1000, 9999)}{ext}"
-    file_path = os.path.join(UPLOAD_DIR, unique_name)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        file_path = os.path.join(UPLOAD_DIR, unique_name)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception:
+        fallback_dir = "/tmp/uploads"
+        os.makedirs(fallback_dir, exist_ok=True)
+        file_path = os.path.join(fallback_dir, unique_name)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
         
     return {"url": f"/static/uploads/{unique_name}", "filename": file.filename}
 

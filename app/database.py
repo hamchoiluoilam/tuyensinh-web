@@ -6,7 +6,12 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Tương thích với môi trường Serverless của Vercel (chỉ thư mục /tmp được phép ghi)
-if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+is_serverless = (
+    not os.access(BASE_DIR, os.W_OK)
+    or any(k in os.environ for k in ["VERCEL", "VERCEL_ENV", "AWS_LAMBDA_FUNCTION_NAME", "LAMBDA_TASK_ROOT"])
+)
+
+if is_serverless:
     DB_PATH = "/tmp/admission_system.db"
     orig_db = os.path.join(BASE_DIR, "admission_system.db")
     if not os.path.exists(DB_PATH) and os.path.exists(orig_db):

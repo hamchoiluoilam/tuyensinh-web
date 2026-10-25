@@ -9,13 +9,6 @@ from app.models import Major, Subject, FeeConfig, FAQItem, AdmissionApplication,
 from app.routers import admissions, finance, support, web_views, auth
 from app.routers.auth import hash_password
 
-# Tạo thư mục upload ảnh thật nếu chưa có
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "app", "static", "uploads")
-try:
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-except Exception:
-    pass
-
 # Tạo bảng dữ liệu an toàn
 try:
     Base.metadata.create_all(bind=engine)
@@ -29,8 +22,31 @@ app = FastAPI(
     redirect_slashes=False
 )
 
-# Cấu hình Static Files cho Uploads & Assets
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "app", "static")), name="static")
+# Cấu hình Static Files cho Uploads & Assets với đường dẫn dự phòng đa môi trường (Local / Vercel Serverless)
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app", "static")
+if not os.path.exists(static_dir):
+    for candidate in [
+        os.path.join(os.getcwd(), "app", "static"),
+        os.path.join(os.getcwd(), "static"),
+        "/var/task/app/static",
+        "/var/task/static"
+    ]:
+        if os.path.exists(candidate):
+            static_dir = candidate
+            break
+
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# Hỗ trợ upload ảnh tạm trên Serverless /tmp
+is_serverless = not os.access(os.path.dirname(os.path.abspath(__file__)), os.W_OK) or any(k in os.environ for k in ["VERCEL", "VERCEL_ENV", "AWS_LAMBDA_FUNCTION_NAME", "LAMBDA_TASK_ROOT"])
+if is_serverless:
+    tmp_upload_dir = "/tmp/uploads"
+    try:
+        os.makedirs(tmp_upload_dir, exist_ok=True)
+        app.mount("/static/uploads", StaticFiles(directory=tmp_upload_dir), name="tmp_uploads")
+    except Exception:
+        pass
 
 # Đăng ký các router
 app.include_router(auth.router)
@@ -41,7 +57,12 @@ app.include_router(web_views.router)
 
 @app.on_event("startup")
 def seed_demo_data():
-    db = SessionLocal()
+    try:
+        db = SessionLocal()
+    except Exception as e:
+        print(f"[Startup Session Error] {e}")
+        return
+
     try:
         # 1. Tạo tài khoản mẫu (Admin, Cán Bộ Tuyển Sinh & Thí Sinh) với mật khẩu bảo mật băm SHA-256 + Salt
         if db.query(User).count() == 0:
@@ -69,7 +90,7 @@ def seed_demo_data():
             db.add_all([admin_user, officer_user, student_user])
             db.commit()
 
-        # 2. Tạo 40 ngành tuyển sinh và các môn học chi tiết
+        # 2. Tạo 40 ngành tuyển sinh và các môn học chi tiết (Batch Flush tối ưu <0.1s cho Vercel Cold Start)
         from app.seed_data import MAJORS_40
         if db.query(Major).count() == 0:
             for m_item in MAJORS_40:
@@ -82,8 +103,7 @@ def seed_demo_data():
                     description=m_item["description"]
                 )
                 db.add(major_obj)
-                db.commit()
-                db.refresh(major_obj)
+                db.flush()
 
                 # Thêm các môn học thuộc ngành này
                 for s_item in m_item["subjects"]:
@@ -98,7 +118,6 @@ def seed_demo_data():
                     )
                     db.add(subj)
             db.commit()
-
 
         # 4. Biểu phí
         if db.query(FeeConfig).count() == 0:
@@ -121,8 +140,9 @@ def seed_demo_data():
             it = db.query(Major).filter(Major.code == "7480201").first() # CNTT
             se = db.query(Major).filter(Major.code == "7480103").first() # Kỹ thuật phần mềm
             if not se:
-                se = db.query(Major).filter(Major.id != it.id).first()
+                se = db.query(Major).filter(Major.id != (it.id if it else 0)).first()
             student = db.query(User).filter(User.role == "STUDENT").first()
+            student_id = student.id if student else None
             
             import json
             sample_candidates = [
@@ -176,7 +196,7 @@ def seed_demo_data():
                     }),
                     "score": 26.05,
                     "paid": True,
-                    "uid": student.id, # Thuộc về student
+                    "uid": student_id,
                     "officer_note": "Hồ sơ đầy đủ, đủ điều kiện tham gia xét tuyển."
                 },
                 {
@@ -258,7 +278,7 @@ def seed_demo_data():
             ]
             for idx, c in enumerate(sample_candidates, start=1):
                 app_code = f"TS2026-10000{idx}"
-                app = AdmissionApplication(
+                candidate_app = AdmissionApplication(
                     app_code=app_code,
                     full_name=c["name"],
                     id_card=c["cccd"],
@@ -279,22 +299,31 @@ def seed_demo_data():
                     user_id=c["uid"],
                     status="HOP_LE"
                 )
-                db.add(app)
-                db.commit()
+                db.add(candidate_app)
+                db.flush()
 
                 tx = PaymentTransaction(
                     tx_code=f"PAY-{app_code}",
-                    application_id=app.id,
+                    application_id=candidate_app.id,
                     amount=50000.0,
                     status="PAID" if c["paid"] else "UNPAID",
                     paid_at=datetime.datetime.utcnow() if c["paid"] else None,
                     qr_payload=f"2vcb://pay?acc=99998888&amount=50000&memo=PAY-{app_code}"
                 )
                 db.add(tx)
-                db.commit()
+            db.commit()
 
+    except Exception as e:
+        print(f"[Startup Seeding Error] {e}")
+        try:
+            db.rollback()
+        except Exception:
+            pass
     finally:
-        db.close()
+        try:
+            db.close()
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
