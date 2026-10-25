@@ -117,12 +117,137 @@ def seed_demo_data():
                 se = db.query(Major).filter(Major.id != it.id).first()
             student = db.query(User).filter(User.role == "STUDENT").first()
             
+            import json
             sample_candidates = [
-                {"name": "Trần Thị Ánh", "cccd": "001202001111", "score": 27.5, "paid": True, "uid": None},
-                {"name": "Nguyễn Văn An", "cccd": "001202002222", "score": 26.0, "paid": True, "uid": student.id}, # Thuộc về student
-                {"name": "Phạm Quang Cường", "cccd": "001202003333", "score": 25.0, "paid": True, "uid": None},
-                {"name": "Hoàng Minh Đức", "cccd": "001202004444", "score": 24.5, "paid": False, "uid": None},
-                {"name": "Đỗ Thu Trang", "cccd": "001202005555", "score": 23.0, "paid": True, "uid": None},
+                {
+                    "name": "Trần Thị Ánh",
+                    "cccd": "001202001111",
+                    "method": "IELTS_THPT",
+                    "method_code": "IELTS_THPT",
+                    "method_name": "Xét tuyển kết hợp chứng chỉ IELTS và điểm thi THPT",
+                    "combination": "IELTS + Toán + Vật lý",
+                    "priority_area": "KV2-NT",
+                    "priority_score": 0.5,
+                    "score_details": json.dumps({
+                        "method": "IELTS_THPT",
+                        "cert_type": "IELTS",
+                        "ielts_band": 7.5,
+                        "ielts_converted": 10.0,
+                        "math_score": 9.0,
+                        "sub2_name": "Vật lý",
+                        "sub2_score": 8.0,
+                        "priority_area": "KV2-NT",
+                        "priority_score": 0.5,
+                        "total": 27.5
+                    }),
+                    "score": 27.5,
+                    "paid": True,
+                    "uid": None,
+                    "officer_note": "Chứng chỉ IELTS 7.5 hợp lệ, điểm thi THPT khớp dữ liệu Bộ GD&ĐT."
+                },
+                {
+                    "name": "Nguyễn Văn An",
+                    "cccd": "001202002222",
+                    "method": "THPT",
+                    "method_code": "THPT",
+                    "method_name": "Xét tuyển điểm thi tốt nghiệp THPT 2026",
+                    "combination": "A00 (Toán, Vật lý, Hóa học)",
+                    "priority_area": "KV2",
+                    "priority_score": 0.25,
+                    "score_details": json.dumps({
+                        "method": "THPT",
+                        "combination": "A00",
+                        "m1_name": "Toán",
+                        "m1_score": 8.8,
+                        "m2_name": "Vật lý",
+                        "m2_score": 8.6,
+                        "m3_name": "Hóa học",
+                        "m3_score": 8.4,
+                        "priority_area": "KV2",
+                        "priority_score": 0.25,
+                        "total": 26.05
+                    }),
+                    "score": 26.05,
+                    "paid": True,
+                    "uid": student.id, # Thuộc về student
+                    "officer_note": "Hồ sơ đầy đủ, đủ điều kiện tham gia xét tuyển."
+                },
+                {
+                    "name": "Phạm Quang Cường",
+                    "cccd": "001202003333",
+                    "method": "DGNL_HSA_TSA",
+                    "method_code": "DGNL_HSA_TSA",
+                    "method_name": "Xét điểm Đánh giá năng lực HSA (ĐHQG Hà Nội)",
+                    "combination": "HSA (ĐHQG Hà Nội)",
+                    "priority_area": "KV1",
+                    "priority_score": 0.75,
+                    "score_details": json.dumps({
+                        "method": "DGNL_HSA_TSA",
+                        "exam_type": "HSA_VNU",
+                        "raw_score": 121,
+                        "max_score": 150,
+                        "converted_score": 24.2,
+                        "priority_area": "KV1",
+                        "priority_score": 0.75,
+                        "total": 24.95
+                    }),
+                    "score": 24.95,
+                    "paid": True,
+                    "uid": None,
+                    "officer_note": "Phiếu điểm HSA 121/150 hợp lệ, điểm quy đổi 24.2."
+                },
+                {
+                    "name": "Hoàng Minh Đức",
+                    "cccd": "001202004444",
+                    "method": "SAT_ACT",
+                    "method_code": "SAT_ACT",
+                    "method_name": "Xét tuyển chứng chỉ chuẩn hóa quốc tế SAT",
+                    "combination": "SAT Standardized",
+                    "priority_area": "KV3",
+                    "priority_score": 0.0,
+                    "score_details": json.dumps({
+                        "method": "SAT_ACT",
+                        "exam_type": "SAT",
+                        "raw_score": 1310,
+                        "max_score": 1600,
+                        "converted_score": 24.56,
+                        "priority_area": "KV3",
+                        "priority_score": 0.0,
+                        "total": 24.56
+                    }),
+                    "score": 24.56,
+                    "paid": False,
+                    "uid": None,
+                    "officer_note": "Chứng chỉ SAT 1310/1600 hợp lệ. Chưa hoàn thành nộp lệ phí xét tuyển."
+                },
+                {
+                    "name": "Đỗ Thu Trang",
+                    "cccd": "001202005555",
+                    "method": "XTHB",
+                    "method_code": "XTHB",
+                    "method_name": "Xét học bạ THPT Chuyên / Trọng điểm",
+                    "combination": "D01 (Toán, Ngữ văn, Tiếng Anh)",
+                    "priority_area": "KV3",
+                    "priority_score": 0.0,
+                    "score_details": json.dumps({
+                        "method": "XTHB",
+                        "school_name": "THPT Chuyên Hà Nội - Amsterdam",
+                        "combination": "D01",
+                        "m1_name": "Toán",
+                        "m1_score": 8.5,
+                        "m2_name": "Ngữ văn",
+                        "m2_score": 7.5,
+                        "m3_name": "Tiếng Anh",
+                        "m3_score": 8.0,
+                        "priority_area": "KV3",
+                        "priority_score": 0.0,
+                        "total": 24.0
+                    }),
+                    "score": 24.0,
+                    "paid": True,
+                    "uid": None,
+                    "officer_note": "Học bạ trường Chuyên chuẩn xác, đã xác minh dấu đỏ."
+                },
             ]
             for idx, c in enumerate(sample_candidates, start=1):
                 app_code = f"TS2026-10000{idx}"
@@ -132,8 +257,15 @@ def seed_demo_data():
                     id_card=c["cccd"],
                     email="student@gmail.com" if c["uid"] else f"candidate{idx}@gmail.com",
                     phone=f"091234560{idx}",
-                    method="HOC_BA",
+                    method=c["method"],
+                    method_code=c["method_code"],
+                    method_name=c["method_name"],
+                    subject_combination=c["combination"],
+                    priority_area=c["priority_area"],
+                    priority_score=c["priority_score"],
+                    score_details=c["score_details"],
                     score=c["score"],
+                    officer_note=c.get("officer_note"),
                     major_id=it.id if it else 1,
                     major_nv2_id=se.id if se else None,
                     proof_url="/static/uploads/default_proof.png",

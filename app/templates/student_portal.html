@@ -73,9 +73,10 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Mã Hồ Sơ</th>
-                                        <th>Nguyện Vọng Xét Tuyển</th>
-                                        <th>Điểm</th>
-                                        <th>Minh Chứng</th>
+                                        <th>Nguyện Vọng</th>
+                                        <th>Phương Thức & Tổ Hợp</th>
+                                        <th>Điểm Xét Tuyển</th>
+                                        <th>Minh Chứng & Điểm Chi Tiết</th>
                                         <th>Trạng Thái Hồ Sơ</th>
                                         <th>Lệ Phí (M07)</th>
                                         <th>Hành Động</th>
@@ -94,15 +95,30 @@
                                             <div class="text-success fw-bold small mt-1"><i class="bi bi-check-circle-fill"></i> Trúng tuyển: {{ app.admitted_major_name }}</div>
                                             {% endif %}
                                         </td>
-                                        <td><span class="badge bg-warning text-dark fs-6">{{ app.score }}</span></td>
                                         <td>
-                                            {% if app.proof_url %}
-                                            <a href="{{ app.proof_url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Xem ảnh học bạ/chứng chỉ">
-                                                <i class="bi bi-image"></i> Xem
-                                            </a>
-                                            {% else %}
-                                            <span class="text-muted small">---</span>
+                                            <span class="badge bg-dark">{{ app.method_code or app.method }}</span>
+                                            <div class="small text-muted mt-1">{{ app.method_name or '' }}</div>
+                                            {% if app.subject_combination %}
+                                            <div class="small mt-1"><span class="badge bg-light text-dark border">{{ app.subject_combination }}</span></div>
                                             {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning text-dark fs-6">{{ app.score }}</span>
+                                            {% if app.priority_area and app.priority_score > 0 %}
+                                            <div class="small text-muted mt-1"><i class="bi bi-geo-alt"></i> {{ app.priority_area }} (+{{ app.priority_score }})</div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column gap-1">
+                                                <button class="btn btn-sm btn-outline-primary" onclick="viewScoreDetails('{{ app.app_code }}', '{{ app.full_name }}', '{{ app.method_name or app.method }}', '{{ app.subject_combination or '' }}', '{{ app.priority_area or '' }}', {{ app.priority_score or 0 }}, {{ app.score }}, '{{ app.proof_url or '' }}', '{{ (app.officer_note or '')|replace('\'', '\\\'') }}', {{ (app.score_details or '{}')|tojson }})">
+                                                    <i class="bi bi-card-checklist"></i> Chi tiết điểm
+                                                </button>
+                                                {% if app.proof_url %}
+                                                <a href="{{ app.proof_url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Xem ảnh học bạ / chứng chỉ">
+                                                    <i class="bi bi-file-earmark-image"></i> Minh chứng
+                                                </a>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                         <td>
                                             {% if app.status == 'CHO_DUYET' %}
@@ -119,6 +135,9 @@
                                                 <span class="badge bg-danger">Không trúng tuyển</span>
                                             {% else %}
                                                 <span class="badge bg-secondary">{{ app.status }}</span>
+                                            {% endif %}
+                                            {% if app.officer_note %}
+                                            <div class="small text-danger mt-1"><i class="bi bi-chat-left-dots"></i> {{ app.officer_note }}</div>
                                             {% endif %}
                                         </td>
                                         <td>
@@ -156,12 +175,20 @@
             <!-- TAB 1: NỘP HỒ SƠ XÉT TUYỂN MỚI (M02) -->
             <div class="tab-pane fade" id="content-apply">
                 <div class="card card-custom p-4 bg-white">
-                    <h4 class="fw-bold text-primary mb-3"><i class="bi bi-mortarboard"></i> Đăng Ký Xét Tuyển Đại Học 2026</h4>
-                    <p class="text-muted">Thông tin cá nhân đã được tự động điền theo tài khoản của bạn.</p>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 border-bottom pb-3">
+                        <div>
+                            <h4 class="fw-bold text-primary mb-1"><i class="bi bi-mortarboard-fill"></i> Đăng Ký Xét Tuyển Đại Học 2026</h4>
+                            <p class="text-muted mb-0 small">Hệ thống xét tuyển tích hợp 5 phương thức chuẩn Đại học Kinh tế Quốc dân (NEU - ai.neu.vn), tự động quy đổi chứng chỉ Quốc tế và tính điểm ưu tiên.</p>
+                        </div>
+                        <span class="badge bg-danger fs-6 px-3 py-2"><i class="bi bi-lightning-charge-fill"></i> Tự Động Quy Đổi Điểm Real-Time</span>
+                    </div>
 
                     <form id="applyForm" onsubmit="handleApply(event)">
                         <input type="hidden" id="app_userId" value="{{ user.id }}">
-                        <div class="row g-3">
+                        
+                        <!-- 1. THÔNG TIN CÁ NHÂN -->
+                        <h6 class="fw-bold text-secondary text-uppercase small mb-3"><i class="bi bi-person-badge"></i> 1. Thông Tin Thí Sinh</h6>
+                        <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Họ và tên thí sinh (*)</label>
                                 <input type="text" id="app_fullName" class="form-control" required value="{{ user.full_name }}">
@@ -179,20 +206,229 @@
                                 <label class="form-label fw-semibold">Số điện thoại (*)</label>
                                 <input type="tel" id="app_phone" class="form-control" required value="{{ user.phone or '' }}" placeholder="0987654321">
                             </div>
+                        </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Phương thức xét tuyển (*)</label>
-                                <select id="app_method" class="form-select">
-                                    <option value="HOC_BA">Xét học bạ THPT</option>
-                                    <option value="THPT">Xét điểm thi tốt nghiệp THPT</option>
+                        <!-- 2. PHƯƠNG THỨC XÉT TUYỂN CHUẨN NEU -->
+                        <h6 class="fw-bold text-secondary text-uppercase small mb-3"><i class="bi bi-diagram-3-fill"></i> 2. Chọn Phương Thức Xét Tuyển (Chuẩn NEU ai.neu.vn)</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold text-primary">Phương thức xét tuyển (*)</label>
+                                <select id="app_methodCode" class="form-select border-primary fw-semibold" onchange="onMethodChange()">
+                                    <option value="THPT">Phương thức 1: Xét kết quả thi tốt nghiệp THPT 2026</option>
+                                    <option value="IELTS_THPT">Phương thức 2: Xét tuyển kết hợp Chứng chỉ Tiếng Anh Quốc tế (IELTS/TOEFL) + 02 môn thi THPT</option>
+                                    <option value="DGNL_HSA_TSA">Phương thức 3: Xét kết quả Đánh giá năng lực (HSA ĐHQG HN) / Đánh giá tư duy (TSA Bách Khoa)</option>
+                                    <option value="SAT_ACT">Phương thức 4: Xét tuyển Chứng chỉ chuẩn hóa quốc tế (SAT / ACT)</option>
+                                    <option value="XTHB">Phương thức 5: Xét học bạ THPT (Học sinh trường Chuyên / Trọng điểm Quốc gia)</option>
                                 </select>
                             </div>
+                        </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Tổng điểm xét tuyển (*)</label>
-                                <input type="number" step="0.05" min="0" max="30" id="app_score" class="form-control" required placeholder="VD: 25.5">
+                        <!-- 3. NHẬP ĐIỂM CHI TIẾT THEO TỪNG PHƯƠNG THỨC -->
+                        <div class="card bg-light border p-3 mb-4 rounded-3">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-calculator-fill text-primary"></i> 3. Nhập Điểm Thành Phần & Quy Đổi Chuẩn NEU</h6>
+
+                            <!-- PANEL: THPT -->
+                            <div id="panel_THPT" class="method-panel">
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-semibold">Tổ hợp môn xét tuyển:</label>
+                                        <select id="thpt_combo" class="form-select" onchange="onThptComboChange()">
+                                            <option value="A00" data-m1="Toán" data-m2="Vật lý" data-m3="Hóa học">A00: Toán, Vật lý, Hóa học</option>
+                                            <option value="A01" data-m1="Toán" data-m2="Vật lý" data-m3="Tiếng Anh">A01: Toán, Vật lý, Tiếng Anh</option>
+                                            <option value="D01" data-m1="Toán" data-m2="Ngữ văn" data-m3="Tiếng Anh">D01: Toán, Ngữ văn, Tiếng Anh</option>
+                                            <option value="D07" data-m1="Toán" data-m2="Hóa học" data-m3="Tiếng Anh">D07: Toán, Hóa học, Tiếng Anh</option>
+                                            <option value="B00" data-m1="Toán" data-m2="Hóa học" data-m3="Sinh học">B00: Toán, Hóa học, Sinh học</option>
+                                            <option value="C00" data-m1="Ngữ văn" data-m2="Lịch sử" data-m3="Địa lý">C00: Ngữ văn, Lịch sử, Địa lý</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold" id="lbl_thpt_m1">Điểm môn Toán (*)</label>
+                                        <input type="number" step="0.05" min="0" max="10" id="thpt_m1" class="form-control calc-trigger" placeholder="0.0 - 10.0" value="8.5">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold" id="lbl_thpt_m2">Điểm môn Vật lý (*)</label>
+                                        <input type="number" step="0.05" min="0" max="10" id="thpt_m2" class="form-control calc-trigger" placeholder="0.0 - 10.0" value="8.0">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold" id="lbl_thpt_m3">Điểm môn Hóa học (*)</label>
+                                        <input type="number" step="0.05" min="0" max="10" id="thpt_m3" class="form-control calc-trigger" placeholder="0.0 - 10.0" value="8.25">
+                                    </div>
+                                </div>
                             </div>
 
+                            <!-- PANEL: IELTS_THPT -->
+                            <div id="panel_IELTS_THPT" class="method-panel d-none">
+                                <div class="alert alert-info py-2 mb-3 small">
+                                    <i class="bi bi-info-circle-fill"></i> <strong>Quy chuẩn NEU:</strong> Điểm xét tuyển = [Điểm quy đổi IELTS] + [Điểm môn Toán] + [Điểm môn thứ 2 (Lý/Hóa/Văn)] + Điểm ưu tiên. (IELTS 5.5=8.0, 6.0=8.5, 6.5=9.0, 7.0=9.5, 7.5-9.0=10.0).
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Chứng chỉ Tiếng Anh:</label>
+                                        <select id="ielts_certType" class="form-select calc-trigger">
+                                            <option value="IELTS">IELTS Academic (>= 5.5)</option>
+                                            <option value="TOEFL">TOEFL iBT (>= 46)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Mức điểm đạt được:</label>
+                                        <select id="ielts_band" class="form-select calc-trigger">
+                                            <option value="5.5">IELTS 5.5 (Quy đổi: 8.00)</option>
+                                            <option value="6.0">IELTS 6.0 (Quy đổi: 8.50)</option>
+                                            <option value="6.5">IELTS 6.5 (Quy đổi: 9.00)</option>
+                                            <option value="7.0">IELTS 7.0 (Quy đổi: 9.50)</option>
+                                            <option value="7.5" selected>IELTS 7.5 (Quy đổi: 10.00)</option>
+                                            <option value="8.0">IELTS 8.0 (Quy đổi: 10.00)</option>
+                                            <option value="8.5">IELTS 8.5 (Quy đổi: 10.00)</option>
+                                            <option value="9.0">IELTS 9.0 (Quy đổi: 10.00)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Điểm quy đổi NEU:</label>
+                                        <input type="text" id="ielts_converted" class="form-control bg-white fw-bold text-success" readonly value="10.00">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Môn 1 THPT (Bắt buộc): Toán (*)</label>
+                                        <input type="number" step="0.05" min="0" max="10" id="ielts_math" class="form-control calc-trigger" placeholder="Điểm môn Toán (0-10)" value="9.0">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-semibold mb-0">Môn 2 THPT (*):</label>
+                                            <select id="ielts_sub2_name" class="form-select form-select-sm w-auto calc-trigger">
+                                                <option value="Vật lý">Vật lý</option>
+                                                <option value="Hóa học">Hóa học</option>
+                                                <option value="Ngữ văn">Ngữ văn</option>
+                                            </select>
+                                        </div>
+                                        <input type="number" step="0.05" min="0" max="10" id="ielts_sub2_score" class="form-control calc-trigger" placeholder="Điểm môn thứ 2 (0-10)" value="8.5">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PANEL: DGNL_HSA_TSA -->
+                            <div id="panel_DGNL_HSA_TSA" class="method-panel d-none">
+                                <div class="alert alert-info py-2 mb-3 small">
+                                    <i class="bi bi-info-circle-fill"></i> <strong>Công thức quy đổi thang 30 NEU:</strong> HSA (ĐHQG HN): <code>Điểm * 30 / 150</code> | TSA (Bách Khoa): <code>Điểm * 30 / 100</code> | APT (ĐHQG TP.HCM): <code>Điểm * 30 / 1200</code>.
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Kỳ thi ĐGNL / ĐGTD:</label>
+                                        <select id="dgnl_exam" class="form-select calc-trigger">
+                                            <option value="HSA" data-max="150" selected>HSA - ĐHQG Hà Nội (Thang 150, điều kiện >= 85)</option>
+                                            <option value="TSA" data-max="100">TSA - ĐH Bách Khoa Hà Nội (Thang 100, điều kiện >= 60)</option>
+                                            <option value="APT" data-max="1200">APT - ĐHQG TP.HCM (Thang 1200, điều kiện >= 700)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Điểm bài thi (*):</label>
+                                        <input type="number" step="0.5" min="0" max="150" id="dgnl_score" class="form-control calc-trigger" placeholder="VD: 110" value="115">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Quy đổi thang 30:</label>
+                                        <input type="text" id="dgnl_converted" class="form-control bg-white fw-bold text-success" readonly value="23.00">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PANEL: SAT_ACT -->
+                            <div id="panel_SAT_ACT" class="method-panel d-none">
+                                <div class="alert alert-info py-2 mb-3 small">
+                                    <i class="bi bi-info-circle-fill"></i> <strong>Công thức quy đổi thang 30 NEU:</strong> SAT (Thang 1600, min 1200): <code>Điểm * 30 / 1600</code> | ACT (Thang 36, min 26): <code>Điểm * 30 / 36</code>.
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Chứng chỉ chuẩn hóa quốc tế:</label>
+                                        <select id="sat_type" class="form-select calc-trigger">
+                                            <option value="SAT" data-max="1600" selected>SAT (Scholastic Assessment Test - Thang 1600)</option>
+                                            <option value="ACT" data-max="36">ACT (American College Testing - Thang 36)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Điểm chứng chỉ (*):</label>
+                                        <input type="number" step="1" min="0" max="1600" id="sat_score" class="form-control calc-trigger" placeholder="VD: 1350" value="1380">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold">Quy đổi thang 30:</label>
+                                        <input type="text" id="sat_converted" class="form-control bg-white fw-bold text-success" readonly value="25.88">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PANEL: XTHB -->
+                            <div id="panel_XTHB" class="method-panel d-none">
+                                <div class="alert alert-info py-2 mb-3 small">
+                                    <i class="bi bi-info-circle-fill"></i> <strong>Quy định NEU:</strong> Áp dụng cho học sinh các trường THPT Chuyên / Trọng điểm Quốc gia. Điểm xét tuyển = Tổng điểm TB 3 năm của 3 môn trong tổ hợp.
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Trường THPT Chuyên / Trọng điểm (*):</label>
+                                        <input type="text" id="xthb_school" class="form-control" placeholder="VD: THPT Chuyên Hà Nội - Amsterdam" value="THPT Chuyên Hà Nội - Amsterdam">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Tổ hợp môn học bạ:</label>
+                                        <select id="xthb_combo" class="form-select" onchange="onXthbComboChange()">
+                                            <option value="A00" data-m1="Toán" data-m2="Vật lý" data-m3="Hóa học">A00: Toán, Vật lý, Hóa học</option>
+                                            <option value="A01" data-m1="Toán" data-m2="Vật lý" data-m3="Tiếng Anh" selected>A01: Toán, Vật lý, Tiếng Anh</option>
+                                            <option value="D01" data-m1="Toán" data-m2="Ngữ văn" data-m3="Tiếng Anh">D01: Toán, Ngữ văn, Tiếng Anh</option>
+                                            <option value="D07" data-m1="Toán" data-m2="Hóa học" data-m3="Tiếng Anh">D07: Toán, Hóa học, Tiếng Anh</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold" id="lbl_xthb_m1">ĐTB 3 năm môn Toán (*)</label>
+                                        <input type="number" step="0.05" min="0" max="10" id="xthb_m1" class="form-control calc-trigger" placeholder="0.0 - 10.0" value="9.1">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold" id="lbl_xthb_m2">ĐTB 3 năm môn Vật lý (*)</label>
+                                        <input type="number" step="0.05" min="0" max="10" id="xthb_m2" class="form-control calc-trigger" placeholder="0.0 - 10.0" value="8.8">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold" id="lbl_xthb_m3">ĐTB 3 năm môn Tiếng Anh (*)</label>
+                                        <input type="number" step="0.05" min="0" max="10" id="xthb_m3" class="form-control calc-trigger" placeholder="0.0 - 10.0" value="9.4">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. KHU VỰC & ĐỐI TƯỢNG ƯU TIÊN -->
+                        <h6 class="fw-bold text-secondary text-uppercase small mb-3"><i class="bi bi-geo-alt-fill"></i> 4. Chế Độ Ưu Tiên Tuyển Sinh (Quy chế Bộ GD&ĐT & NEU)</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Khu vực ưu tiên (*):</label>
+                                <select id="app_priorityArea" class="form-select calc-trigger">
+                                    <option value="KV3" data-bonus="0.0" selected>KV3 - Không ưu tiên (+0.00 điểm)</option>
+                                    <option value="KV2" data-bonus="0.25">KV2 - Thị xã, thành phố tỉnh lẻ (+0.25 điểm)</option>
+                                    <option value="KV2-NT" data-bonus="0.50">KV2-NT - Nông thôn (+0.50 điểm)</option>
+                                    <option value="KV1" data-bonus="0.75">KV1 - Miền núi, hải đảo (+0.75 điểm)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Đối tượng ưu tiên:</label>
+                                <select id="app_priorityObj" class="form-select calc-trigger">
+                                    <option value="0" data-bonus="0.0" selected>Không thuộc đối tượng ưu tiên (+0.0 điểm)</option>
+                                    <option value="UT1" data-bonus="2.0">Nhóm UT1: Đối tượng 01 - 04 (+2.00 điểm)</option>
+                                    <option value="UT2" data-bonus="1.0">Nhóm UT2: Đối tượng 05 - 07 (+1.00 điểm)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 5. REAL-TIME SCORE BREAKDOWN DISPLAY -->
+                        <div class="card border-primary bg-primary bg-opacity-10 p-3 mb-4 rounded-3 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div>
+                                    <span class="badge bg-primary text-uppercase mb-1"><i class="bi bi-award-fill"></i> Kết Quả Tính Điểm Tự Động</span>
+                                    <h5 class="fw-bold text-primary mb-1" id="liveScoreFormula">Công thức: Môn 1 + Môn 2 + Môn 3 + Điểm Ưu Tiên</h5>
+                                    <div class="small text-muted" id="liveScoreBreakdownText">Điểm thành phần: Toán (8.5) + Lý (8.0) + Hóa (8.25) + Ưu tiên KV3 (0.0)</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="small text-muted text-uppercase fw-semibold">Tổng Điểm Xét Tuyển (Thang 30)</div>
+                                    <div class="display-6 fw-bold text-danger" id="liveTotalScoreDisplay">24.75</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="app_score" value="24.75">
+
+                        <!-- 6. NGUYỆN VỌNG ĐĂNG KÝ -->
+                        <h6 class="fw-bold text-secondary text-uppercase small mb-3"><i class="bi bi-bookmark-star-fill"></i> 5. Nguyện Vọng Đăng Ký Ngành Học</h6>
+                        <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-primary"><i class="bi bi-star-fill text-warning"></i> Nguyện Vọng 1 (* Bắt buộc)</label>
                                 <select id="app_majorId" class="form-select border-primary" required>
@@ -212,20 +448,32 @@
                                     {% endfor %}
                                 </select>
                             </div>
+                        </div>
 
+                        <!-- 7. TẢI MINH CHỨNG THEO PHƯƠNG THỨC -->
+                        <h6 class="fw-bold text-secondary text-uppercase small mb-3"><i class="bi bi-file-earmark-arrow-up-fill"></i> 6. Tải Hồ Sơ Minh Chứng Hợp Lệ</h6>
+                        <div class="row g-3 mb-4">
                             <div class="col-12">
-                                <label class="form-label fw-semibold"><i class="bi bi-cloud-arrow-up text-primary"></i> Tải Minh Chứng Học Bạ / Bảng Điểm (Tải file từ máy tính hoặc điện thoại)</label>
-                                <div class="input-group mb-2">
-                                    <input type="file" id="app_fileInput" class="form-control" accept="image/jpeg,image/png,image/webp,application/pdf" onchange="uploadRealProof(this)">
+                                <div class="p-3 bg-white border rounded shadow-sm">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                                        <strong class="text-dark" id="proofGuidanceTitle">Yêu cầu minh chứng cho Phương thức 1 (Điểm thi tốt nghiệp THPT):</strong>
+                                    </div>
+                                    <p class="text-muted small mb-2" id="proofGuidanceText">
+                                        Thí sinh tải lên file ảnh (.jpg, .png) hoặc PDF bản scan rõ nét <strong>Giấy chứng nhận kết quả thi tốt nghiệp THPT năm 2026</strong> do Sở GD&ĐT cấp.
+                                    </p>
+                                    <div class="input-group">
+                                        <input type="file" id="app_fileInput" class="form-control" accept="image/jpeg,image/png,image/webp,application/pdf" onchange="uploadRealProof(this)">
+                                    </div>
+                                    <input type="hidden" id="app_proofUrl" value="">
+                                    <div id="uploadStatusBox" class="small text-muted mt-1">Chấp nhận JPG, PNG, WEBP, PDF (tối đa 10MB).</div>
                                 </div>
-                                <input type="hidden" id="app_proofUrl" value="">
-                                <div id="uploadStatusBox" class="small text-muted">Chấp nhận định dạng ảnh JPG, PNG, WEBP hoặc file PDF (tối đa 10MB).</div>
                             </div>
                         </div>
 
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-primary px-4 fw-bold">
-                                <i class="bi bi-send-check"></i> Xác Nhận Nộp Hồ Sơ
+                        <div class="mt-4 border-top pt-3 text-end">
+                            <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow">
+                                <i class="bi bi-send-check-fill me-1"></i> Xác Nhận Nộp Hồ Sơ Xét Tuyển
                             </button>
                         </div>
                     </form>
@@ -360,6 +608,80 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL: XEM CHI TIẾT ĐIỂM & MINH CHỨNG THÍ SINH (CHUẨN NEU) -->
+<div class="modal fade" id="scoreDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-card-checklist me-1"></i> Bảng Điểm Chi Tiết & Minh Chứng Xét Tuyển</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <strong>Họ và tên thí sinh:</strong> <span id="modalStudentName" class="text-primary fw-bold"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Mã hồ sơ:</strong> <span id="modalAppCode" class="badge bg-secondary fs-6"></span>
+                    </div>
+                    <div class="col-md-12">
+                        <strong>Phương thức xét tuyển:</strong> <span id="modalMethodName" class="fw-semibold"></span>
+                    </div>
+                    <div class="col-md-6" id="modalComboContainer">
+                        <strong>Tổ hợp xét tuyển:</strong> <span id="modalCombo" class="badge bg-info text-dark"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Ưu tiên khu vực & đối tượng:</strong> <span id="modalPriority" class="text-muted"></span>
+                    </div>
+                </div>
+
+                <div class="card bg-light border mb-3">
+                    <div class="card-header fw-bold bg-white"><i class="bi bi-table"></i> Chi Tiết Điểm Thành Phần & Quy Đổi Chuẩn NEU</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-0 align-middle text-center">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Thành Phần Xét Tuyển</th>
+                                        <th>Điểm Gốc</th>
+                                        <th>Điểm Quy Đổi NEU</th>
+                                        <th>Ghi Chú Quy Định</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modalScoreTableBody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-warning fw-bold fs-6">
+                                        <td colspan="2" class="text-end">TỔNG ĐIỂM XÉT TUYỂN (Thang 30):</td>
+                                        <td id="modalFinalScore" class="text-danger fs-5"></td>
+                                        <td>Đã cộng điểm ưu tiên</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="modalOfficerNoteBox" class="alert alert-warning py-2 mb-3 d-none">
+                    <strong><i class="bi bi-chat-left-text-fill"></i> Ghi chú của Cán bộ xét duyệt:</strong>
+                    <div id="modalOfficerNoteText" class="mt-1"></div>
+                </div>
+
+                <div class="border rounded p-3 bg-white">
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-file-earmark-image"></i> Tài Liệu Minh Chứng Đính Kèm</h6>
+                    <div id="modalProofPreview" class="text-center">
+                        <!-- Preview image or link -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -412,7 +734,138 @@ async function uploadRealProof(fileInput) {
     }
 }
 
-// --- Nộp hồ sơ (M02) ---
+// --- CHUYỂN ĐỔI PHƯƠNG THỨC XÉT TUYỂN CHUẨN NEU ---
+function onMethodChange() {
+    const method = document.getElementById('app_methodCode').value;
+    document.querySelectorAll('.method-panel').forEach(el => el.classList.add('d-none'));
+
+    const activePanel = document.getElementById('panel_' + method);
+    if (activePanel) activePanel.classList.remove('d-none');
+
+    // Cập nhật hướng dẫn minh chứng
+    const titleEl = document.getElementById('proofGuidanceTitle');
+    const textEl = document.getElementById('proofGuidanceText');
+
+    if (method === 'THPT') {
+        titleEl.textContent = 'Yêu cầu minh chứng cho Phương thức 1 (Điểm thi THPT):';
+        textEl.innerHTML = 'Thí sinh tải lên file ảnh hoặc PDF bản scan rõ nét <strong>Giấy chứng nhận kết quả thi tốt nghiệp THPT năm 2026</strong> do Sở GD&ĐT cấp.';
+    } else if (method === 'IELTS_THPT') {
+        titleEl.textContent = 'Yêu cầu minh chứng cho Phương thức 2 (Chứng chỉ IELTS/TOEFL + Điểm THPT):';
+        textEl.innerHTML = 'Thí sinh tải lên bản scan/chụp rõ nét <strong>Chứng chỉ Tiếng Anh Quốc tế (IELTS hoặc TOEFL iBT)</strong> còn hiệu lực 2 năm và <strong>Phiếu báo điểm thi THPT</strong>.';
+    } else if (method === 'DGNL_HSA_TSA') {
+        titleEl.textContent = 'Yêu cầu minh chứng cho Phương thức 3 (ĐGNL ĐHQG Hà Nội / ĐGTD Bách Khoa):';
+        textEl.innerHTML = 'Thí sinh tải lên file scan <strong>Phiếu báo điểm chính thức kỳ thi Đánh giá năng lực (HSA)</strong> hoặc <strong>Đánh giá tư duy (TSA)</strong> có dấu xác nhận.';
+    } else if (method === 'SAT_ACT') {
+        titleEl.textContent = 'Yêu cầu minh chứng cho Phương thức 4 (Chứng chỉ Quốc tế SAT / ACT):';
+        textEl.innerHTML = 'Thí sinh tải lên bản scan chứng chỉ <strong>SAT / ACT chính thức</strong> (có mã verify score report để trường đối soát).';
+    } else if (method === 'XTHB') {
+        titleEl.textContent = 'Yêu cầu minh chứng cho Phương thức 5 (Xét học bạ THPT Chuyên/Trọng điểm):';
+        textEl.innerHTML = 'Thí sinh tải lên bản scan <strong>Học bạ 3 năm THPT</strong> có đóng dấu giáp lai và dấu xác nhận của Ban Giám Hiệu trường THPT Chuyên/Trọng điểm.';
+    }
+
+    calculateNeuScore();
+}
+
+function onThptComboChange() {
+    const opt = document.getElementById('thpt_combo').selectedOptions[0];
+    document.getElementById('lbl_thpt_m1').textContent = `Điểm môn ${opt.getAttribute('data-m1')} (*)`;
+    document.getElementById('lbl_thpt_m2').textContent = `Điểm môn ${opt.getAttribute('data-m2')} (*)`;
+    document.getElementById('lbl_thpt_m3').textContent = `Điểm môn ${opt.getAttribute('data-m3')} (*)`;
+    calculateNeuScore();
+}
+
+function onXthbComboChange() {
+    const opt = document.getElementById('xthb_combo').selectedOptions[0];
+    document.getElementById('lbl_xthb_m1').textContent = `ĐTB 3 năm môn ${opt.getAttribute('data-m1')} (*)`;
+    document.getElementById('lbl_xthb_m2').textContent = `ĐTB 3 năm môn ${opt.getAttribute('data-m2')} (*)`;
+    document.getElementById('lbl_xthb_m3').textContent = `ĐTB 3 năm môn ${opt.getAttribute('data-m3')} (*)`;
+    calculateNeuScore();
+}
+
+// --- TỰ ĐỘNG TÍNH & QUY ĐỔI ĐIỂM CHUẨN NEU REAL-TIME ---
+function calculateNeuScore() {
+    const method = document.getElementById('app_methodCode').value;
+    let rawScore = 0;
+    let formulaText = "";
+    let breakdownText = "";
+
+    if (method === 'THPT') {
+        const comboOpt = document.getElementById('thpt_combo').selectedOptions[0];
+        const m1Name = comboOpt.getAttribute('data-m1');
+        const m2Name = comboOpt.getAttribute('data-m2');
+        const m3Name = comboOpt.getAttribute('data-m3');
+        const m1 = parseFloat(document.getElementById('thpt_m1').value) || 0;
+        const m2 = parseFloat(document.getElementById('thpt_m2').value) || 0;
+        const m3 = parseFloat(document.getElementById('thpt_m3').value) || 0;
+        rawScore = m1 + m2 + m3;
+        formulaText = `Công thức THPT: ${m1Name} + ${m2Name} + ${m3Name} + Điểm Ưu Tiên`;
+        breakdownText = `Điểm 3 môn: ${m1Name} (${m1}) + ${m2Name} (${m2}) + ${m3Name} (${m3}) = ${rawScore.toFixed(2)}`;
+    } else if (method === 'IELTS_THPT') {
+        const certType = document.getElementById('ielts_certType').value;
+        const band = parseFloat(document.getElementById('ielts_band').value) || 5.5;
+        // Bảng quy đổi NEU
+        let conv = 8.0;
+        if (band >= 7.5) conv = 10.0;
+        else if (band >= 7.0) conv = 9.5;
+        else if (band >= 6.5) conv = 9.0;
+        else if (band >= 6.0) conv = 8.5;
+        else conv = 8.0;
+
+        document.getElementById('ielts_converted').value = conv.toFixed(2);
+        const math = parseFloat(document.getElementById('ielts_math').value) || 0;
+        const sub2Name = document.getElementById('ielts_sub2_name').value;
+        const sub2Score = parseFloat(document.getElementById('ielts_sub2_score').value) || 0;
+
+        rawScore = conv + math + sub2Score;
+        formulaText = `Công thức NEU: Điểm quy đổi Tiếng Anh + Điểm Toán + Điểm ${sub2Name} + Điểm Ưu Tiên`;
+        breakdownText = `Chi tiết: ${certType} ${band} (Quy đổi: ${conv.toFixed(2)}) + Toán (${math}) + ${sub2Name} (${sub2Score}) = ${rawScore.toFixed(2)}`;
+    } else if (method === 'DGNL_HSA_TSA') {
+        const examOpt = document.getElementById('dgnl_exam').selectedOptions[0];
+        const maxVal = parseFloat(examOpt.getAttribute('data-max')) || 150;
+        const score = parseFloat(document.getElementById('dgnl_score').value) || 0;
+        const conv = (score * 30.0 / maxVal);
+        document.getElementById('dgnl_converted').value = conv.toFixed(2);
+        rawScore = conv;
+        formulaText = `Công thức NEU: (Điểm thi / ${maxVal}) * 30 + Điểm Ưu Tiên`;
+        breakdownText = `Chi tiết: ${examOpt.text.split('(')[0].trim()} đạt ${score}/${maxVal} điểm quy đổi ra thang 30 là ${conv.toFixed(2)}`;
+    } else if (method === 'SAT_ACT') {
+        const satOpt = document.getElementById('sat_type').selectedOptions[0];
+        const maxVal = parseFloat(satOpt.getAttribute('data-max')) || 1600;
+        const score = parseFloat(document.getElementById('sat_score').value) || 0;
+        const conv = (score * 30.0 / maxVal);
+        document.getElementById('sat_converted').value = conv.toFixed(2);
+        rawScore = conv;
+        formulaText = `Công thức NEU: (Điểm ${satOpt.value} / ${maxVal}) * 30 + Điểm Ưu Tiên`;
+        breakdownText = `Chi tiết: ${satOpt.value} đạt ${score}/${maxVal} quy đổi ra thang 30 là ${conv.toFixed(2)}`;
+    } else if (method === 'XTHB') {
+        const comboOpt = document.getElementById('xthb_combo').selectedOptions[0];
+        const m1Name = comboOpt.getAttribute('data-m1');
+        const m2Name = comboOpt.getAttribute('data-m2');
+        const m3Name = comboOpt.getAttribute('data-m3');
+        const m1 = parseFloat(document.getElementById('xthb_m1').value) || 0;
+        const m2 = parseFloat(document.getElementById('xthb_m2').value) || 0;
+        const m3 = parseFloat(document.getElementById('xthb_m3').value) || 0;
+        rawScore = m1 + m2 + m3;
+        formulaText = `Công thức Học bạ Chuyên: ĐTB 3 năm (${m1Name} + ${m2Name} + ${m3Name}) + Điểm Ưu Tiên`;
+        breakdownText = `Chi tiết: ${m1Name} (${m1}) + ${m2Name} (${m2}) + ${m3Name} (${m3}) = ${rawScore.toFixed(2)}`;
+    }
+
+    // Tính điểm ưu tiên (Khu vực + Đối tượng)
+    const areaOpt = document.getElementById('app_priorityArea').selectedOptions[0];
+    const areaBonus = parseFloat(areaOpt.getAttribute('data-bonus')) || 0;
+    const objOpt = document.getElementById('app_priorityObj').selectedOptions[0];
+    const objBonus = parseFloat(objOpt.getAttribute('data-bonus')) || 0;
+    const priorityBonus = areaBonus + objBonus;
+
+    const totalFinal = Math.min(30.0, Math.round((rawScore + priorityBonus) * 100) / 100);
+
+    document.getElementById('liveScoreFormula').textContent = formulaText;
+    document.getElementById('liveScoreBreakdownText').innerHTML = breakdownText + ` | Ưu tiên: <strong>+${priorityBonus.toFixed(2)}</strong> (${areaOpt.value}: +${areaBonus}, ĐT: +${objBonus})`;
+    document.getElementById('liveTotalScoreDisplay').textContent = totalFinal.toFixed(2);
+    document.getElementById('app_score').value = totalFinal.toFixed(2);
+}
+
+// --- NỘP HỒ SƠ ĐẦY ĐỦ THÀNH PHẦN ĐIỂM (M02) ---
 async function handleApply(e) {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
@@ -432,12 +885,102 @@ async function handleApply(e) {
         return;
     }
 
+    const methodCode = document.getElementById('app_methodCode').value;
+    const methodSelect = document.getElementById('app_methodCode');
+    const methodName = methodSelect.options[methodSelect.selectedIndex].text;
+    const priorityArea = document.getElementById('app_priorityArea').value;
+    const areaBonus = parseFloat(document.getElementById('app_priorityArea').selectedOptions[0].getAttribute('data-bonus')) || 0;
+    const objBonus = parseFloat(document.getElementById('app_priorityObj').selectedOptions[0].getAttribute('data-bonus')) || 0;
+    const priorityScore = areaBonus + objBonus;
+
+    let comboStr = null;
+    let scoreDetails = {};
+
+    if (methodCode === 'THPT') {
+        const combo = document.getElementById('thpt_combo').value;
+        comboStr = combo;
+        scoreDetails = {
+            method: 'THPT',
+            combination: combo,
+            m1_name: document.getElementById('thpt_combo').selectedOptions[0].getAttribute('data-m1'),
+            m1_score: parseFloat(document.getElementById('thpt_m1').value) || 0,
+            m2_name: document.getElementById('thpt_combo').selectedOptions[0].getAttribute('data-m2'),
+            m2_score: parseFloat(document.getElementById('thpt_m2').value) || 0,
+            m3_name: document.getElementById('thpt_combo').selectedOptions[0].getAttribute('data-m3'),
+            m3_score: parseFloat(document.getElementById('thpt_m3').value) || 0,
+            priority_area: priorityArea,
+            priority_score: priorityScore,
+            total: parseFloat(document.getElementById('app_score').value)
+        };
+    } else if (methodCode === 'IELTS_THPT') {
+        comboStr = `IELTS + Toán + ${document.getElementById('ielts_sub2_name').value}`;
+        scoreDetails = {
+            method: 'IELTS_THPT',
+            cert_type: document.getElementById('ielts_certType').value,
+            ielts_band: parseFloat(document.getElementById('ielts_band').value) || 0,
+            ielts_converted: parseFloat(document.getElementById('ielts_converted').value) || 0,
+            math_score: parseFloat(document.getElementById('ielts_math').value) || 0,
+            sub2_name: document.getElementById('ielts_sub2_name').value,
+            sub2_score: parseFloat(document.getElementById('ielts_sub2_score').value) || 0,
+            priority_area: priorityArea,
+            priority_score: priorityScore,
+            total: parseFloat(document.getElementById('app_score').value)
+        };
+    } else if (methodCode === 'DGNL_HSA_TSA') {
+        const examName = document.getElementById('dgnl_exam').value;
+        comboStr = examName;
+        scoreDetails = {
+            method: 'DGNL_HSA_TSA',
+            exam_name: examName,
+            raw_score: parseFloat(document.getElementById('dgnl_score').value) || 0,
+            converted_score: parseFloat(document.getElementById('dgnl_converted').value) || 0,
+            priority_area: priorityArea,
+            priority_score: priorityScore,
+            total: parseFloat(document.getElementById('app_score').value)
+        };
+    } else if (methodCode === 'SAT_ACT') {
+        const satName = document.getElementById('sat_type').value;
+        comboStr = satName;
+        scoreDetails = {
+            method: 'SAT_ACT',
+            cert_name: satName,
+            raw_score: parseFloat(document.getElementById('sat_score').value) || 0,
+            converted_score: parseFloat(document.getElementById('sat_converted').value) || 0,
+            priority_area: priorityArea,
+            priority_score: priorityScore,
+            total: parseFloat(document.getElementById('app_score').value)
+        };
+    } else if (methodCode === 'XTHB') {
+        const combo = document.getElementById('xthb_combo').value;
+        comboStr = combo;
+        scoreDetails = {
+            method: 'XTHB',
+            school_name: document.getElementById('xthb_school').value.trim(),
+            combination: combo,
+            m1_name: document.getElementById('xthb_combo').selectedOptions[0].getAttribute('data-m1'),
+            m1_score: parseFloat(document.getElementById('xthb_m1').value) || 0,
+            m2_name: document.getElementById('xthb_combo').selectedOptions[0].getAttribute('data-m2'),
+            m2_score: parseFloat(document.getElementById('xthb_m2').value) || 0,
+            m3_name: document.getElementById('xthb_combo').selectedOptions[0].getAttribute('data-m3'),
+            m3_score: parseFloat(document.getElementById('xthb_m3').value) || 0,
+            priority_area: priorityArea,
+            priority_score: priorityScore,
+            total: parseFloat(document.getElementById('app_score').value)
+        };
+    }
+
     const payload = {
         full_name: document.getElementById('app_fullName').value.trim(),
         id_card: document.getElementById('app_idCard').value.trim(),
         email: document.getElementById('app_email').value.trim(),
         phone: document.getElementById('app_phone').value.trim(),
-        method: document.getElementById('app_method').value,
+        method: methodCode,
+        method_code: methodCode,
+        method_name: methodName,
+        subject_combination: comboStr,
+        priority_area: priorityArea,
+        priority_score: priorityScore,
+        score_details: JSON.stringify(scoreDetails),
         score: parseFloat(document.getElementById('app_score').value),
         major_id: parseInt(major1Val),
         major_nv2_id: major2Val ? parseInt(major2Val) : null,
@@ -455,11 +998,12 @@ async function handleApply(e) {
         const data = await res.json();
         if (res.ok) {
             msgBox.innerHTML = `
-                <div class="alert alert-success mt-3">
-                    <h5 class="fw-bold"><i class="bi bi-check-circle"></i> Nộp hồ sơ thành công!</h5>
-                    <p class="mb-1">Mã hồ sơ: <strong class="fs-5 text-danger">${data.app_code}</strong></p>
+                <div class="alert alert-success mt-3 shadow">
+                    <h5 class="fw-bold"><i class="bi bi-check-circle-fill"></i> Nộp hồ sơ xét tuyển thành công!</h5>
+                    <p class="mb-1">Mã hồ sơ: <strong class="fs-4 text-danger">${data.app_code}</strong></p>
+                    <p class="mb-1">Phương thức: <strong>${data.method_name || data.method_code}</strong> | Tổng điểm xét tuyển: <strong class="text-primary">${data.score}</strong></p>
                     <p class="small text-muted mb-2">Đã ghi nhận NV1${data.major_nv2_id ? ' và NV2' : ''}. Vui lòng chuyển sang bước nộp lệ phí để hồ sơ được đưa vào danh sách lọc ảo.</p>
-                    <button class="btn btn-sm btn-primary" onclick="switchToPay('${data.app_code}')">Đi đến bước đóng lệ phí ngay &raquo;</button>
+                    <button class="btn btn-primary fw-bold" onclick="switchToPay('${data.app_code}')">Đi đến bước đóng lệ phí ngay &raquo;</button>
                 </div>
             `;
             setTimeout(() => { location.reload(); }, 2500);
@@ -472,6 +1016,170 @@ async function handleApply(e) {
         btn.disabled = false;
     }
 }
+
+// --- MODAL XEM CHI TIẾT ĐIỂM THÍ SINH ---
+let scoreModalObj = null;
+function viewScoreDetails(appCode, fullName, methodName, combo, priorityArea, priorityScore, finalScore, proofUrl, officerNote, scoreDetailsJson) {
+    document.getElementById('modalAppCode').textContent = appCode;
+    document.getElementById('modalStudentName').textContent = fullName;
+    document.getElementById('modalMethodName').textContent = methodName;
+    document.getElementById('modalCombo').textContent = combo || '---';
+    document.getElementById('modalPriority').textContent = `${priorityArea || 'KV3'} (+${priorityScore || 0} điểm)`;
+    document.getElementById('modalFinalScore').textContent = finalScore;
+
+    // Render bảng thành phần điểm
+    const tbody = document.getElementById('modalScoreTableBody');
+    tbody.innerHTML = '';
+
+    let details = {};
+    if (typeof scoreDetailsJson === 'string') {
+        try { details = JSON.parse(scoreDetailsJson); } catch(e) { details = {}; }
+    } else if (typeof scoreDetailsJson === 'object' && scoreDetailsJson !== null) {
+        details = scoreDetailsJson;
+    }
+
+    if (details.method === 'IELTS_THPT') {
+        tbody.innerHTML += `
+            <tr>
+                <td>Chứng chỉ ${details.cert_type || 'IELTS'} Band ${details.ielts_band || ''}</td>
+                <td><span class="badge bg-secondary fs-6">${details.ielts_band || ''}</span></td>
+                <td><strong class="text-success fs-6">${details.ielts_converted || 0}</strong></td>
+                <td>Quy đổi theo bảng điểm chuẩn NEU</td>
+            </tr>
+            <tr>
+                <td>Điểm Môn Toán (Thi THPT)</td>
+                <td>${details.math_score || 0}</td>
+                <td><strong>${details.math_score || 0}</strong></td>
+                <td>Môn điều kiện bắt buộc</td>
+            </tr>
+            <tr>
+                <td>Điểm Môn 2: ${details.sub2_name || 'Vật lý'} (Thi THPT)</td>
+                <td>${details.sub2_score || 0}</td>
+                <td><strong>${details.sub2_score || 0}</strong></td>
+                <td>Môn tự chọn tổ hợp</td>
+            </tr>
+        `;
+    } else if (details.method === 'DGNL_HSA_TSA') {
+        tbody.innerHTML += `
+            <tr>
+                <td>Kỳ thi ${details.exam_name || 'HSA/TSA'}</td>
+                <td><span class="badge bg-primary fs-6">${details.raw_score || 0}</span></td>
+                <td><strong class="text-success fs-6">${details.converted_score || 0}</strong></td>
+                <td>Quy đổi sang thang điểm 30 NEU</td>
+            </tr>
+        `;
+    } else if (details.method === 'SAT_ACT') {
+        tbody.innerHTML += `
+            <tr>
+                <td>Chứng chỉ ${details.cert_name || 'SAT/ACT'}</td>
+                <td><span class="badge bg-primary fs-6">${details.raw_score || 0}</span></td>
+                <td><strong class="text-success fs-6">${details.converted_score || 0}</strong></td>
+                <td>Quy đổi sang thang điểm 30 NEU</td>
+            </tr>
+        `;
+    } else if (details.method === 'XTHB') {
+        tbody.innerHTML += `
+            <tr>
+                <td>Trường THPT: ${details.school_name || 'Chuyên/Trọng điểm'}</td>
+                <td colspan="3" class="text-start fst-italic">Học sinh trường THPT Chuyên toàn quốc</td>
+            </tr>
+            <tr>
+                <td>ĐTB Môn ${details.m1_name || 'Môn 1'} (3 năm)</td>
+                <td>${details.m1_score || 0}</td>
+                <td><strong>${details.m1_score || 0}</strong></td>
+                <td>Học bạ THPT</td>
+            </tr>
+            <tr>
+                <td>ĐTB Môn ${details.m2_name || 'Môn 2'} (3 năm)</td>
+                <td>${details.m2_score || 0}</td>
+                <td><strong>${details.m2_score || 0}</strong></td>
+                <td>Học bạ THPT</td>
+            </tr>
+            <tr>
+                <td>ĐTB Môn ${details.m3_name || 'Môn 3'} (3 năm)</td>
+                <td>${details.m3_score || 0}</td>
+                <td><strong>${details.m3_score || 0}</strong></td>
+                <td>Học bạ THPT</td>
+            </tr>
+        `;
+    } else {
+        // THPT mặc định
+        tbody.innerHTML += `
+            <tr>
+                <td>Điểm Môn ${details.m1_name || 'Toán'}</td>
+                <td>${details.m1_score || 0}</td>
+                <td><strong>${details.m1_score || 0}</strong></td>
+                <td>Kỳ thi tốt nghiệp THPT 2026</td>
+            </tr>
+            <tr>
+                <td>Điểm Môn ${details.m2_name || 'Môn 2'}</td>
+                <td>${details.m2_score || 0}</td>
+                <td><strong>${details.m2_score || 0}</strong></td>
+                <td>Kỳ thi tốt nghiệp THPT 2026</td>
+            </tr>
+            <tr>
+                <td>Điểm Môn ${details.m3_name || 'Môn 3'}</td>
+                <td>${details.m3_score || 0}</td>
+                <td><strong>${details.m3_score || 0}</strong></td>
+                <td>Kỳ thi tốt nghiệp THPT 2026</td>
+            </tr>
+        `;
+    }
+
+    // Điểm cộng ưu tiên
+    tbody.innerHTML += `
+        <tr class="table-light">
+            <td colspan="2" class="text-end">Điểm cộng ưu tiên (${priorityArea || 'KV3'}):</td>
+            <td><strong class="text-primary">+${priorityScore || 0}</strong></td>
+            <td>Quy chế tuyển sinh hiện hành</td>
+        </tr>
+    `;
+
+    // Ghi chú cán bộ
+    const noteBox = document.getElementById('modalOfficerNoteBox');
+    if (officerNote && officerNote.trim()) {
+        noteBox.classList.remove('d-none');
+        document.getElementById('modalOfficerNoteText').textContent = officerNote;
+    } else {
+        noteBox.classList.add('d-none');
+    }
+
+    // Minh chứng đính kèm
+    const proofContainer = document.getElementById('modalProofPreview');
+    if (proofUrl && proofUrl.trim()) {
+        const isPdf = proofUrl.toLowerCase().endsWith('.pdf');
+        if (isPdf) {
+            proofContainer.innerHTML = `
+                <div class="alert alert-info py-2">
+                    <i class="bi bi-file-earmark-pdf fs-4 text-danger me-2"></i>
+                    Tài liệu minh chứng định dạng PDF: 
+                    <a href="${proofUrl}" target="_blank" class="btn btn-sm btn-primary ms-2"><i class="bi bi-box-arrow-up-right"></i> Mở xem file PDF</a>
+                </div>
+            `;
+        } else {
+            proofContainer.innerHTML = `
+                <a href="${proofUrl}" target="_blank" title="Nhấn để phóng to ảnh">
+                    <img src="${proofUrl}" alt="Minh chứng" class="img-fluid rounded border shadow-sm" style="max-height: 320px;">
+                </a>
+                <div class="small text-muted mt-1"><i class="bi bi-zoom-in"></i> Nhấp vào ảnh để xem kích thước đầy đủ</div>
+            `;
+        }
+    } else {
+        proofContainer.innerHTML = `<span class="text-muted fst-italic">Chưa có file minh chứng đính kèm.</span>`;
+    }
+
+    scoreModalObj = new bootstrap.Modal(document.getElementById('scoreDetailsModal'));
+    scoreModalObj.show();
+}
+
+// Lắng nghe sự kiện để tính điểm real-time
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.calc-trigger').forEach(el => {
+        el.addEventListener('input', calculateNeuScore);
+        el.addEventListener('change', calculateNeuScore);
+    });
+    calculateNeuScore();
+});
 
 // --- Thanh toán lệ phí (M07) ---
 let currentTxCode = "";

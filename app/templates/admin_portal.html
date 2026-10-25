@@ -190,9 +190,12 @@
                     <div class="col-md-2">
                         <label class="form-label small fw-semibold text-muted mb-1">Phương thức xét:</label>
                         <select id="filterMethod" class="form-select form-select-sm" onchange="filterCandidatesMultiFacet()">
-                            <option value="ALL">-- Tất cả --</option>
-                            <option value="HOC_BA">Học bạ THPT</option>
-                            <option value="THPT">Điểm thi THPT</option>
+                            <option value="ALL">-- Tất cả phương thức --</option>
+                            <option value="THPT">Xét điểm thi tốt nghiệp THPT</option>
+                            <option value="IELTS_THPT">IELTS / TOEFL + Điểm THPT</option>
+                            <option value="DGNL_HSA_TSA">ĐGNL (HSA) / ĐGTD (TSA)</option>
+                            <option value="SAT_ACT">Chứng chỉ Quốc tế SAT / ACT</option>
+                            <option value="XTHB">Xét học bạ THPT Chuyên</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -212,7 +215,7 @@
                             <th>Mã HS</th>
                             <th>Họ Tên & CCCD</th>
                             <th>Nguyện Vọng Đăng Ký</th>
-                            <th>Phương Thức</th>
+                            <th>Phương Thức & Tổ Hợp</th>
                             <th>Điểm</th>
                             <th>Minh Chứng</th>
                             <th>Lệ Phí (M07)</th>
@@ -225,7 +228,7 @@
                         <tr data-major="{{ app.major_id }}" 
                             data-status="{{ app.status }}" 
                             data-payment="{{ app.payment.status if app.payment else 'UNPAID' }}" 
-                            data-method="{{ app.method }}" 
+                            data-method="{{ app.method_code or app.method }}" 
                             data-score="{{ app.score }}" 
                             data-search="{{ app.app_code|lower }} {{ app.full_name|lower }} {{ app.id_card }} {{ app.phone }}">
                             <td><strong>{{ app.app_code }}</strong></td>
@@ -243,10 +246,12 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if app.method == 'HOC_BA' %}
-                                    <span class="badge bg-light text-dark border">Học bạ</span>
-                                {% else %}
-                                    <span class="badge bg-light text-primary border">Điểm THPT</span>
+                                <span class="badge bg-dark">{{ app.method_code or app.method }}</span>
+                                {% if app.subject_combination %}
+                                <div class="small text-muted mt-1">{{ app.subject_combination }}</div>
+                                {% endif %}
+                                {% if app.priority_area and app.priority_score > 0 %}
+                                <div class="small text-primary"><i class="bi bi-geo-alt"></i> {{ app.priority_area }} (+{{ app.priority_score }})</div>
                                 {% endif %}
                             </td>
                             <td><span class="fw-bold text-primary fs-6">{{ app.score }}</span></td>
@@ -285,11 +290,15 @@
                                 {% else %}
                                     <span class="badge bg-dark">{{ app.status }}</span>
                                 {% endif %}
+                                {% if app.officer_note %}
+                                <div class="small text-muted mt-1 fst-italic" title="{{ app.officer_note }}"><i class="bi bi-chat-left-dots text-danger"></i> {{ app.officer_note[:25] }}...</div>
+                                {% endif %}
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-success" onclick="reviewApp({{ app.id }}, 'HOP_LE')">Duyệt Hợp Lệ</button>
-                                    <button class="btn btn-outline-danger" onclick="reviewApp({{ app.id }}, 'TU_CHOI')">Từ Chối</button>
+                                    <button class="btn btn-outline-primary" onclick="openAdminReviewModal({{ app.id }}, '{{ app.app_code }}', '{{ app.full_name }}', '{{ app.id_card }}', '{{ app.method_name or app.method }}', '{{ app.subject_combination or '' }}', '{{ app.priority_area or '' }}', {{ app.priority_score or 0 }}, {{ app.score }}, '{{ app.proof_url or '' }}', '{{ app.status }}', '{{ (app.officer_note or '')|replace('\'', '\\\'') }}', {{ (app.score_details or '{}')|tojson }})">
+                                        <i class="bi bi-shield-check"></i> Xem Điểm & Duyệt
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -502,6 +511,109 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Duyệt Hồ Sơ & Kiểm Tra Chi Tiết Điểm (Chuẩn NEU) -->
+<div class="modal fade" id="adminReviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-shield-check me-2"></i> Thẩm Định Hồ Sơ & Chi Tiết Điểm Thí Sinh</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="revAppId" value="">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <strong>Họ tên:</strong> <span id="revStudentName" class="text-primary fw-bold"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>CCCD:</strong> <span id="revIdCard" class="badge bg-light text-dark border"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Mã hồ sơ:</strong> <span id="revAppCode" class="badge bg-secondary fs-6"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Ưu tiên:</strong> <span id="revPriority" class="text-muted"></span>
+                    </div>
+                    <div class="col-md-12">
+                        <strong>Phương thức xét tuyển:</strong> <span id="revMethodName" class="fw-semibold text-dark"></span>
+                    </div>
+                </div>
+
+                <!-- Bảng chi tiết điểm -->
+                <div class="card bg-light border mb-3">
+                    <div class="card-header fw-bold bg-white"><i class="bi bi-table"></i> Bảng Thành Phần Điểm & Quy Đổi Chuẩn NEU</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-0 align-middle text-center">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Thành Phần</th>
+                                        <th>Điểm Khai Báo</th>
+                                        <th>Điểm Quy Đổi NEU</th>
+                                        <th>Quy Chuẩn</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="revScoreTableBody">
+                                    <!-- Dynamic -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-warning fw-bold fs-6">
+                                        <td colspan="2" class="text-end">TỔNG ĐIỂM XÉT TUYỂN:</td>
+                                        <td id="revFinalScore" class="text-danger fs-5"></td>
+                                        <td>Đã cộng điểm ưu tiên</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Minh chứng đính kèm -->
+                <div class="card mb-3 border">
+                    <div class="card-header fw-bold bg-white"><i class="bi bi-file-earmark-image"></i> Minh Chứng Thí Sinh Đã Tải Lên</div>
+                    <div class="card-body text-center p-3" id="revProofPreview">
+                        <!-- Dynamic preview -->
+                    </div>
+                </div>
+
+                <!-- Form Quyết Định Xét Duyệt Của Cán Bộ -->
+                <div class="card border-primary p-3 bg-primary bg-opacity-10 rounded-3">
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-check2-circle"></i> Kết Quả Thẩm Định & Ghi Chú Cán Bộ</h6>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Quyết định trạng thái (*):</label>
+                            <select id="revStatusSelect" class="form-select fw-semibold">
+                                <option value="HOP_LE">Hợp Lệ (Đủ điều kiện xét trúng tuyển)</option>
+                                <option value="TU_CHOI">Từ Chối (Hồ sơ sai lệch / Không hợp lệ)</option>
+                                <option value="CHO_DUYET">Chờ Bổ Sung / Xét Thêm</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Chọn nhanh lý do phản hồi:</label>
+                            <select id="revPresetSelect" class="form-select form-select-sm" onchange="onSelectPresetReason(this)">
+                                <option value="">-- Chọn mẫu phản hồi nhanh --</option>
+                                <option value="Chứng chỉ và điểm thi hợp lệ, chuẩn xác theo quy chế tuyển sinh NEU 2026.">Chứng chỉ & điểm thi hợp lệ chuẩn xác</option>
+                                <option value="Bản scan minh chứng bị mờ/mất góc, yêu cầu chụp lại rõ nét hơn và cập nhật lại.">Ảnh minh chứng mờ, yêu cầu nộp lại</option>
+                                <option value="Điểm khai báo không khớp với Giấy chứng nhận điểm/Chứng chỉ đính kèm.">Điểm khai báo không khớp minh chứng</option>
+                                <option value="Chứng chỉ Tiếng Anh đã hết thời hạn hiệu lực 2 năm tính đến ngày nộp hồ sơ.">Chứng chỉ quá hạn 2 năm</option>
+                                <option value="Học bạ THPT thiếu dấu giáp lai và xác nhận của Ban Giám Hiệu nhà trường.">Học bạ thiếu dấu xác nhận</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <label class="form-label small fw-semibold">Ghi chú cán bộ gửi đến thí sinh:</label>
+                            <textarea id="revOfficerNote" class="form-control" rows="2" placeholder="Ghi chú cụ thể lý do hợp lệ hoặc yêu cầu bổ sung..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary fw-bold px-4" onclick="submitAdminReview()"><i class="bi bi-save me-1"></i> Lưu Kết Quả Thẩm Định</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -655,7 +767,184 @@ async function submitFeeUpdate() {
     }
 }
 
-// --- Duyệt hồ sơ ---
+// --- Thẩm định & Duyệt hồ sơ kèm điểm chi tiết (Chuẩn NEU) ---
+let adminReviewModalObj = null;
+
+function openAdminReviewModal(appId, appCode, fullName, idCard, methodName, combo, priorityArea, priorityScore, finalScore, proofUrl, status, officerNote, scoreDetailsJson) {
+    document.getElementById('revAppId').value = appId;
+    document.getElementById('revAppCode').textContent = appCode;
+    document.getElementById('revStudentName').textContent = fullName;
+    document.getElementById('revIdCard').textContent = idCard;
+    document.getElementById('revMethodName').textContent = methodName;
+    document.getElementById('revPriority').textContent = `${priorityArea || 'KV3'} (+${priorityScore || 0}đ)`;
+    document.getElementById('revFinalScore').textContent = finalScore;
+    document.getElementById('revStatusSelect').value = status || 'HOP_LE';
+    document.getElementById('revOfficerNote').value = officerNote || '';
+    document.getElementById('revPresetSelect').value = '';
+
+    const tbody = document.getElementById('revScoreTableBody');
+    tbody.innerHTML = '';
+
+    let details = {};
+    if (typeof scoreDetailsJson === 'string') {
+        try { details = JSON.parse(scoreDetailsJson); } catch(e) { details = {}; }
+    } else if (typeof scoreDetailsJson === 'object' && scoreDetailsJson !== null) {
+        details = scoreDetailsJson;
+    }
+
+    if (details.method === 'IELTS_THPT') {
+        tbody.innerHTML += `
+            <tr>
+                <td>Chứng chỉ ${details.cert_type || 'IELTS'} Band ${details.ielts_band || ''}</td>
+                <td><span class="badge bg-secondary fs-6">${details.ielts_band || ''}</span></td>
+                <td><strong class="text-success fs-6">${details.ielts_converted || 0}</strong></td>
+                <td>Quy đổi chuẩn NEU (5.5=8.0, 6.0=8.5, 6.5=9.0, 7.0=9.5, 7.5+=10.0)</td>
+            </tr>
+            <tr>
+                <td>Điểm Môn Toán (Thi THPT)</td>
+                <td>${details.math_score || 0}</td>
+                <td><strong>${details.math_score || 0}</strong></td>
+                <td>Môn điều kiện bắt buộc</td>
+            </tr>
+            <tr>
+                <td>Điểm Môn 2: ${details.sub2_name || 'Vật lý'} (Thi THPT)</td>
+                <td>${details.sub2_score || 0}</td>
+                <td><strong>${details.sub2_score || 0}</strong></td>
+                <td>Môn tự chọn tổ hợp</td>
+            </tr>
+        `;
+    } else if (details.method === 'DGNL_HSA_TSA') {
+        tbody.innerHTML += `
+            <tr>
+                <td>Kỳ thi ${details.exam_name || 'HSA/TSA'}</td>
+                <td><span class="badge bg-primary fs-6">${details.raw_score || 0}</span></td>
+                <td><strong class="text-success fs-6">${details.converted_score || 0}</strong></td>
+                <td>Quy đổi chuẩn thang 30 NEU</td>
+            </tr>
+        `;
+    } else if (details.method === 'SAT_ACT') {
+        tbody.innerHTML += `
+            <tr>
+                <td>Chứng chỉ ${details.cert_name || 'SAT/ACT'}</td>
+                <td><span class="badge bg-primary fs-6">${details.raw_score || 0}</span></td>
+                <td><strong class="text-success fs-6">${details.converted_score || 0}</strong></td>
+                <td>Quy đổi chuẩn thang 30 NEU</td>
+            </tr>
+        `;
+    } else if (details.method === 'XTHB') {
+        tbody.innerHTML += `
+            <tr>
+                <td>Trường THPT: ${details.school_name || 'Chuyên/Trọng điểm'}</td>
+                <td colspan="3" class="text-start fst-italic">Học sinh trường THPT Chuyên toàn quốc</td>
+            </tr>
+            <tr>
+                <td>ĐTB Môn ${details.m1_name || 'Môn 1'} (3 năm)</td>
+                <td>${details.m1_score || 0}</td>
+                <td><strong>${details.m1_score || 0}</strong></td>
+                <td>Học bạ THPT Chuyên</td>
+            </tr>
+            <tr>
+                <td>ĐTB Môn ${details.m2_name || 'Môn 2'} (3 năm)</td>
+                <td>${details.m2_score || 0}</td>
+                <td><strong>${details.m2_score || 0}</strong></td>
+                <td>Học bạ THPT Chuyên</td>
+            </tr>
+            <tr>
+                <td>ĐTB Môn ${details.m3_name || 'Môn 3'} (3 năm)</td>
+                <td>${details.m3_score || 0}</td>
+                <td><strong>${details.m3_score || 0}</strong></td>
+                <td>Học bạ THPT Chuyên</td>
+            </tr>
+        `;
+    } else {
+        tbody.innerHTML += `
+            <tr>
+                <td>Điểm Môn ${details.m1_name || 'Toán'}</td>
+                <td>${details.m1_score || 0}</td>
+                <td><strong>${details.m1_score || 0}</strong></td>
+                <td>Kỳ thi tốt nghiệp THPT 2026</td>
+            </tr>
+            <tr>
+                <td>Điểm Môn ${details.m2_name || 'Môn 2'}</td>
+                <td>${details.m2_score || 0}</td>
+                <td><strong>${details.m2_score || 0}</strong></td>
+                <td>Kỳ thi tốt nghiệp THPT 2026</td>
+            </tr>
+            <tr>
+                <td>Điểm Môn ${details.m3_name || 'Môn 3'}</td>
+                <td>${details.m3_score || 0}</td>
+                <td><strong>${details.m3_score || 0}</strong></td>
+                <td>Kỳ thi tốt nghiệp THPT 2026</td>
+            </tr>
+        `;
+    }
+
+    tbody.innerHTML += `
+        <tr class="table-light">
+            <td colspan="2" class="text-end">Điểm ưu tiên (${priorityArea || 'KV3'}):</td>
+            <td><strong class="text-primary">+${priorityScore || 0}</strong></td>
+            <td>Quy chế tuyển sinh hiện hành</td>
+        </tr>
+    `;
+
+    const proofContainer = document.getElementById('revProofPreview');
+    if (proofUrl && proofUrl.trim()) {
+        const isPdf = proofUrl.toLowerCase().endsWith('.pdf');
+        if (isPdf) {
+            proofContainer.innerHTML = `
+                <div class="alert alert-info py-2">
+                    <i class="bi bi-file-earmark-pdf fs-4 text-danger me-2"></i>
+                    Tài liệu minh chứng PDF: 
+                    <a href="${proofUrl}" target="_blank" class="btn btn-sm btn-primary ms-2"><i class="bi bi-box-arrow-up-right"></i> Mở xem file PDF</a>
+                </div>
+            `;
+        } else {
+            proofContainer.innerHTML = `
+                <a href="${proofUrl}" target="_blank" title="Nhấn để phóng to ảnh">
+                    <img src="${proofUrl}" alt="Minh chứng" class="img-fluid rounded border shadow-sm" style="max-height: 340px;">
+                </a>
+                <div class="small text-muted mt-1"><i class="bi bi-zoom-in"></i> Nhấp vào ảnh để xem kích thước đầy đủ</div>
+            `;
+        }
+    } else {
+        proofContainer.innerHTML = `<span class="text-muted fst-italic">Không có file minh chứng tải lên.</span>`;
+    }
+
+    adminReviewModalObj = new bootstrap.Modal(document.getElementById('adminReviewModal'));
+    adminReviewModalObj.show();
+}
+
+function onSelectPresetReason(selectEl) {
+    if (selectEl.value) {
+        document.getElementById('revOfficerNote').value = selectEl.value;
+    }
+}
+
+async function submitAdminReview() {
+    const appId = document.getElementById('revAppId').value;
+    const status = document.getElementById('revStatusSelect').value;
+    const note = document.getElementById('revOfficerNote').value.trim();
+
+    try {
+        const res = await fetch(`/api/admissions/applications/${appId}/status`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ status: status, officer_note: note })
+        });
+        if (res.ok) {
+            adminReviewModalObj.hide();
+            alert("Lưu kết quả thẩm định hồ sơ thành công!");
+            location.reload();
+        } else {
+            const data = await res.json();
+            alert(data.detail || "Lỗi khi lưu kết quả thẩm định!");
+        }
+    } catch(e) {
+        alert("Lỗi kết nối máy chủ!");
+    }
+}
+
+// Duyệt nhanh (tương thích)
 async function reviewApp(appId, status) {
     if (!confirm(`Bạn có chắc chắn muốn duyệt hồ sơ này là [${status}]?`)) return;
     try {

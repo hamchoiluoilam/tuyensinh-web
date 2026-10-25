@@ -67,7 +67,13 @@ class ApplicationCreate(BaseModel):
     id_card: str
     email: EmailStr
     phone: str
-    method: str # HOC_BA or THPT
+    method: Optional[str] = "THPT"
+    method_code: Optional[str] = "THPT"
+    method_name: Optional[str] = "Xét tuyển kết quả thi tốt nghiệp THPT"
+    subject_combination: Optional[str] = None
+    priority_area: Optional[str] = "KV3"
+    priority_score: Optional[float] = 0.0
+    score_details: Optional[str] = None
     score: float
     major_id: int # Nguyện vọng 1
     major_nv2_id: Optional[int] = None # Nguyện vọng 2
@@ -90,6 +96,11 @@ class PublicVerifyLookupOut(BaseModel):
     major_name: str
     major_code: str
     major_nv2_name: Optional[str] = None
+    method_code: Optional[str] = None
+    method_name: Optional[str] = None
+    subject_combination: Optional[str] = None
+    priority_area: Optional[str] = None
+    priority_score: Optional[float] = None
     score: float
     status: str
     admitted_major_name: Optional[str] = None
@@ -104,6 +115,12 @@ class ApplicationOut(BaseModel):
     email: str
     phone: str
     method: str
+    method_code: Optional[str] = "THPT"
+    method_name: Optional[str] = None
+    subject_combination: Optional[str] = None
+    priority_area: Optional[str] = "KV3"
+    priority_score: Optional[float] = 0.0
+    score_details: Optional[str] = None
     score: float
     status: str
     officer_note: Optional[str] = None

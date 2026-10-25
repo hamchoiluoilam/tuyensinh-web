@@ -62,8 +62,14 @@ class AdmissionApplication(Base):
     id_card = Column(String(20), index=True, nullable=False)              # Số CCCD
     email = Column(String(120), nullable=False)
     phone = Column(String(20), nullable=False)
-    method = Column(String(50), nullable=False)                          # HOC_BA hoặc THPT
-    score = Column(Float, nullable=False)                                # Tổng điểm xét tuyển
+    method = Column(String(100), nullable=False)                         # Tên hoặc mã phương thức
+    method_code = Column(String(50), default="THPT")                     # THPT, IELTS_THPT, DGNL_HSA_TSA, XTHB, SAT_ACT
+    method_name = Column(String(200), default="Xét tuyển điểm thi THPT") # Tên đầy đủ của phương thức chuẩn NEU
+    subject_combination = Column(String(50), nullable=True)              # Tổ hợp môn (A00, A01, D01, D07...)
+    priority_area = Column(String(50), default="KV3")                    # Khu vực ưu tiên (KV1, KV2-NT, KV2, KV3)
+    priority_score = Column(Float, default=0.0)                          # Điểm cộng ưu tiên (0.0, 0.25, 0.5, 0.75)
+    score_details = Column(Text, nullable=True)                          # JSON chi tiết điểm thành phần (môn 1, môn 2, IELTS, HSA...)
+    score = Column(Float, nullable=False)                                # Tổng điểm xét tuyển (sau quy đổi và cộng ưu tiên)
     proof_url = Column(Text, nullable=True)                              # Link ảnh hoặc đường dẫn file tải lên
     admitted_major_name = Column(String(200), nullable=True)             # Ngành trúng tuyển thực tế (NV1 hay NV2)
 

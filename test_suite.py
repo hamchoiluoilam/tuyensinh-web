@@ -127,4 +127,53 @@ assert r_ai_combo.status_code == 200
 assert 'A01' in r_ai_combo.json()['reply']
 print('Test 10: Complete AI Admission Advisor Engine (3-tier probability & multi-turn): OK')
 
-print("\n🎉 TẤT CẢ 10 BÀI KIỂM THỬ NÂNG CẤP (RBAC, 2FA SECURITY, ADVANCED FILTER & AI ENGINE) ĐẠT ĐIỂM 10/10 TUYỆT ĐỐI! 🎉")
+# 11. Test NEU Admission Methods (IELTS + THPT Conversion & Detailed Score Breakdown)
+import json
+neu_app_payload = {
+    'full_name': 'Nguyễn Phương Thảo',
+    'id_card': '001202088888',
+    'email': 'thaonp@gmail.com',
+    'phone': '0988776655',
+    'method': 'IELTS_THPT',
+    'method_code': 'IELTS_THPT',
+    'method_name': 'Xét tuyển kết hợp chứng chỉ IELTS và điểm thi THPT (Chuẩn NEU)',
+    'subject_combination': 'IELTS + Toán + Vật lý',
+    'priority_area': 'KV2-NT',
+    'priority_score': 0.5,
+    'score_details': json.dumps({
+        'method': 'IELTS_THPT',
+        'cert_type': 'IELTS',
+        'ielts_band': 7.5,
+        'ielts_converted': 10.0,
+        'math_score': 9.2,
+        'sub2_name': 'Vật lý',
+        'sub2_score': 8.8,
+        'priority_area': 'KV2-NT',
+        'priority_score': 0.5,
+        'total': 28.5
+    }),
+    'score': 28.5,
+    'major_id': 1,
+    'major_nv2_id': 2,
+    'proof_url': uploaded_url
+}
+r_neu_apply = client.post('/api/admissions/apply', json=neu_app_payload)
+assert r_neu_apply.status_code == 200, f'NEU Apply failed: {r_neu_apply.text}'
+neu_res = r_neu_apply.json()
+assert neu_res['method_code'] == 'IELTS_THPT'
+assert neu_res['score'] == 28.5
+assert neu_res['priority_area'] == 'KV2-NT'
+assert neu_res['priority_score'] == 0.5
+assert neu_res['score_details'] is not None
+
+# Test officer note & score inspection
+client.post('/api/auth/login', json={'email': 'canbo@tuyensinh.edu.vn', 'password': 'canbo123'})
+r_review = client.patch(f'/api/admissions/applications/{neu_res["id"]}/status', json={
+    'status': 'HOP_LE',
+    'officer_note': 'Chứng chỉ IELTS 7.5 quy đổi 10.0 điểm hợp lệ theo chuẩn NEU.'
+})
+assert r_review.status_code == 200
+assert r_review.json()['officer_note'] == 'Chứng chỉ IELTS 7.5 quy đổi 10.0 điểm hợp lệ theo chuẩn NEU.'
+print('Test 11: NEU Admission Methods & Real-time Score Breakdown (IELTS 7.5 -> 10.0 + THPT): OK')
+
+print("\n🎉 TẤT CẢ 11 BÀI KIỂM THỬ NÂNG CẤP (RBAC, 2FA SECURITY, NEU METHODS, ADVANCED FILTER & AI ENGINE) ĐẠT ĐIỂM 10/10 TUYỆT ĐỐI! 🎉")
