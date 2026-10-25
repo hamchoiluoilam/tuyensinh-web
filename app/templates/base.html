@@ -189,6 +189,9 @@
                         {% if user.role == 'ADMIN' %}
                             <span class="badge bg-danger py-2 px-3 badge-pill"><i class="bi bi-shield-fill-check me-1"></i> Admin: {{ user.full_name }}</span>
                             <a href="/logout" class="btn btn-sm btn-outline-light rounded-pill"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
+                        {% elif user.role == 'OFFICER' %}
+                            <span class="badge bg-warning text-dark py-2 px-3 badge-pill"><i class="bi bi-person-workspace me-1"></i> Cán bộ: {{ user.full_name }}</span>
+                            <a href="/logout" class="btn btn-sm btn-outline-light rounded-pill"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
                         {% else %}
                             <span class="badge bg-light text-dark py-2 px-3 badge-pill border"><i class="bi bi-person-circle text-primary me-1"></i> {{ user.full_name }}</span>
                             <a href="/logout" class="btn btn-sm btn-outline-light rounded-pill"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
@@ -301,6 +304,8 @@
         document.getElementById('aiChatForm').dispatchEvent(new Event('submit'));
     }
 
+    let aiChatHistory = [];
+
     async function handleAIChatSubmit(e) {
         e.preventDefault();
         const input = document.getElementById('aiChatInput');
@@ -321,6 +326,8 @@
         input.value = "";
         chatWindow.scrollTop = chatWindow.scrollHeight;
 
+        aiChatHistory.push({ role: "user", text: query });
+
         // Render Loading
         const loadingId = "loading-" + Date.now();
         const loadingHtml = `
@@ -340,19 +347,24 @@
             const res = await fetch('/api/support/ai-consultant', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({query: query})
+                body: JSON.stringify({ query: query, history: aiChatHistory })
             });
             const data = await res.json();
             const loadingEl = document.getElementById(loadingId);
             if (loadingEl) loadingEl.remove();
+
+            aiChatHistory.push({ role: "model", text: data.reply });
+
+            const engineBadge = data.engine ? `<span class="badge bg-light text-muted border mt-2" style="font-size: 10px;"><i class="bi bi-cpu"></i> ${data.engine}</span>` : '';
 
             const botMsgHtml = `
                 <div class="d-flex gap-2 mb-3">
                     <div class="bg-primary text-white rounded-circle p-2 d-flex align-items-center justify-content-center align-self-start" style="width: 30px; height: 30px; min-width: 30px;">
                         <i class="bi bi-robot" style="font-size: 13px;"></i>
                     </div>
-                    <div class="p-3 bg-white rounded-3 shadow-sm border" style="max-width: 85%;">
-                        ${data.reply}
+                    <div class="p-3 bg-white rounded-3 shadow-sm border" style="max-width: 88%;">
+                        <div>${data.reply}</div>
+                        <div>${engineBadge}</div>
                     </div>
                 </div>
             `;

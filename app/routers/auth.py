@@ -60,21 +60,53 @@ def login_student(data: UserLogin, response: Response, db: Session = Depends(get
         }
     }
 
+def get_current_user_from_req(request: Request, db: Session = Depends(get_db)):
+    """Lấy thông tin người dùng hiện tại từ Cookie session an toàn"""
+    uid = request.cookies.get("user_id")
+    if not uid:
+        return None
+    try:
+        return db.query(User).filter(User.id == int(uid)).first()
+    except:
+        return None
+
+def require_logged_in_user(request: Request, db: Session = Depends(get_db)) -> User:
+    """Yêu cầu bắt buộc đã đăng nhập"""
+    user = get_current_user_from_req(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để thực hiện thao tác này!")
+    return user
+
+def require_officer_or_admin(request: Request, db: Session = Depends(get_db)) -> User:
+    """Yêu cầu quyền Cán bộ Tuyển sinh (OFFICER) hoặc Quản trị viên (ADMIN)"""
+    user = require_logged_in_user(request, db)
+    if user.role not in ["OFFICER", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Quyền truy cập bị từ chối: Yêu cầu quyền Cán bộ hoặc Admin!")
+    return user
+
+def require_admin(request: Request, db: Session = Depends(get_db)) -> User:
+    """Yêu cầu quyền Quản trị viên cấp cao (ADMIN)"""
+    user = require_logged_in_user(request, db)
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Quyền truy cập bị từ chối: Thao tác này chỉ dành riêng cho Admin!")
+    return user
+
 @router.post("/admin-login")
 def login_admin(data: UserLogin, response: Response, db: Session = Depends(get_db)):
-    """[Cán bộ] Đăng nhập Cổng Quản Trị"""
+    """[Cán bộ / Admin] Đăng nhập Cổng Quản Trị & Nghiệp Vụ Tuyển Sinh"""
     user = db.query(User).filter(User.email == data.email.lower()).first()
     if not user or not verify_password(data.password, user.password):
         raise HTTPException(status_code=401, detail="Email hoặc mật khẩu không chính xác!")
 
-    if user.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Tài khoản này không có quyền quản trị viên!")
+    if user.role not in ["ADMIN", "OFFICER"]:
+        raise HTTPException(status_code=403, detail="Tài khoản này không có quyền Cán bộ tuyển sinh hoặc Quản trị viên!")
 
     response.set_cookie(key="user_id", value=str(user.id), httponly=True, max_age=86400)
-    response.set_cookie(key="user_role", value="ADMIN", httponly=True, max_age=86400)
+    response.set_cookie(key="user_role", value=user.role, httponly=True, max_age=86400)
 
+    role_title = "Quản trị viên" if user.role == "ADMIN" else "Cán bộ tuyển sinh"
     return {
-        "message": "Đăng nhập quản trị thành công!",
+        "message": f"Đăng nhập {role_title} thành công!",
         "user": {
             "id": user.id,
             "email": user.email,

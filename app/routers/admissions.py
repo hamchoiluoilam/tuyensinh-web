@@ -2,21 +2,44 @@ import random
 import datetime
 import os
 import shutil
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from ..database import get_db
-from ..models import Major, AdmissionApplication, PaymentTransaction, Subject
+from ..models import Major, AdmissionApplication, PaymentTransaction, Subject, User
 from ..schemas import (
     MajorOut, MajorDetailOut, MajorUpdateQuota,
-    ApplicationCreate, ApplicationOut, ApplicationStatusUpdate
+    ApplicationCreate, ApplicationOut, ApplicationStatusUpdate,
+    PublicVerifyLookupRequest, PublicVerifyLookupOut
 )
+from .auth import get_current_user_from_req
 
 router = APIRouter(prefix="/api/admissions", tags=["M02 - Tuyển sinh (Người 1)"])
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "static", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+def mask_id_card(id_card: str) -> str:
+    """Che giấu số CCCD bảo vệ quyền riêng tư (VD: 0012******11)"""
+    if not id_card or len(id_card) < 6:
+        return "******"
+    return id_card[:4] + "*" * (len(id_card) - 6) + id_card[-2:]
+
+def mask_phone(phone: str) -> str:
+    """Che giấu số điện thoại cá nhân (VD: 0912***601)"""
+    if not phone or len(phone) < 6:
+        return "***"
+    return phone[:4] + "***" + phone[-3:]
+
+def mask_email(email: str) -> str:
+    """Che giấu email (VD: st*****@gmail.com)"""
+    if not email or "@" not in email:
+        return "*****"
+    parts = email.split("@")
+    name = parts[0]
+    domain = parts[1]
+    return (name[:2] + "*****" if len(name) > 2 else "*****") + "@" + domain
 
 @router.get("/majors", response_model=List[MajorOut])
 def get_majors(db: Session = Depends(get_db)):
@@ -145,9 +168,42 @@ def list_applications(
         )
     return query.order_by(AdmissionApplication.score.desc()).all()
 
+@router.post("/public-verify-lookup", response_model=PublicVerifyLookupOut)
+def public_verify_lookup(data: PublicVerifyLookupRequest, db: Session = Depends(get_db)):
+    """
+    [Bảo Mật Tra Cứu Công Khai - Xác Minh 2 Yếu Tố 2FA & Che Giấu Dữ Liệu]
+    Bắt buộc nhập đúng Mã hồ sơ VÀ 4 số cuối CCCD/CMND.
+    Chỉ trả về dữ liệu cần thiết, đã được MASK (che mờ) hoàn toàn CCCD, SĐT.
+    TUYỆT ĐỐI không trả về ảnh học bạ/minh chứng riêng tư.
+    """
+    app_code = data.app_code.strip()
+    id_card_last4 = data.id_card_last4.strip()
+
+    app = db.query(AdmissionApplication).filter(AdmissionApplication.app_code == app_code).first()
+    if not app or not app.id_card.endswith(id_card_last4):
+        raise HTTPException(
+            status_code=400,
+            detail="Mã hồ sơ hoặc 4 số cuối CCCD không trùng khớp. Vui lòng kiểm tra lại để bảo vệ thông tin thí sinh!"
+        )
+
+    return PublicVerifyLookupOut(
+        app_code=app.app_code,
+        full_name=app.full_name,
+        id_card_masked=mask_id_card(app.id_card),
+        phone_masked=mask_phone(app.phone),
+        major_name=app.major.name if app.major else "",
+        major_code=app.major.code if app.major else "",
+        major_nv2_name=app.major_nv2.name if app.major_nv2 else None,
+        score=app.score,
+        status=app.status,
+        admitted_major_name=app.admitted_major_name,
+        payment_status=app.payment.status if app.payment else "UNPAID",
+        created_at=app.created_at
+    )
+
 @router.get("/lookup/{identifier}")
-def lookup_application(identifier: str, db: Session = Depends(get_db)):
-    """[Thí sinh] Tra cứu trạng thái hồ sơ theo Mã hồ sơ hoặc CCCD"""
+def lookup_application(identifier: str, request: Request, db: Session = Depends(get_db)):
+    """[Tra cứu hồ sơ] Kiểm tra quyền hạn: Chỉ trả về thông tin nhạy cảm (ảnh học bạ, CCCD) cho chính chủ hoặc cán bộ"""
     app = db.query(AdmissionApplication).filter(
         (AdmissionApplication.app_code == identifier) |
         (AdmissionApplication.id_card == identifier)
@@ -156,6 +212,10 @@ def lookup_application(identifier: str, db: Session = Depends(get_db)):
     if not app:
         raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ xét tuyển!")
 
+    curr_user = get_current_user_from_req(request, db)
+    is_owner = curr_user and (curr_user.id == app.user_id or curr_user.email == app.email)
+    is_staff = curr_user and curr_user.role in ["OFFICER", "ADMIN"]
+
     payment_info = {
         "status": app.payment.status if app.payment else "CHUA_TAO",
         "tx_code": app.payment.tx_code if app.payment else None,
@@ -163,46 +223,78 @@ def lookup_application(identifier: str, db: Session = Depends(get_db)):
         "paid_at": app.payment.paid_at if app.payment else None
     }
 
-    return {
-        "id": app.id,
-        "app_code": app.app_code,
-        "full_name": app.full_name,
-        "id_card": app.id_card,
-        "email": app.email,
-        "phone": app.phone,
-        "method": app.method,
-        "score": app.score,
-        "proof_url": app.proof_url,
-        "major_name": app.major.name if app.major else "",
-        "major_code": app.major.code if app.major else "",
-        "major_nv2_name": app.major_nv2.name if app.major_nv2 else None,
-        "admitted_major_name": app.admitted_major_name,
-        "status": app.status,
-        "created_at": app.created_at,
-        "payment": payment_info
-    }
+    if is_owner or is_staff:
+        return {
+            "id": app.id,
+            "app_code": app.app_code,
+            "full_name": app.full_name,
+            "id_card": app.id_card,
+            "email": app.email,
+            "phone": app.phone,
+            "method": app.method,
+            "score": app.score,
+            "proof_url": app.proof_url,
+            "major_name": app.major.name if app.major else "",
+            "major_code": app.major.code if app.major else "",
+            "major_nv2_name": app.major_nv2.name if app.major_nv2 else None,
+            "admitted_major_name": app.admitted_major_name,
+            "status": app.status,
+            "created_at": app.created_at,
+            "payment": payment_info
+        }
+    else:
+        # Khách vãng lai: Che mờ dữ liệu cá nhân & TUYỆT ĐỐI ẩn link minh chứng học bạ!
+        return {
+            "id": app.id,
+            "app_code": app.app_code,
+            "full_name": app.full_name,
+            "id_card": mask_id_card(app.id_card),
+            "email": mask_email(app.email),
+            "phone": mask_phone(app.phone),
+            "method": app.method,
+            "score": app.score,
+            "proof_url": None,
+            "major_name": app.major.name if app.major else "",
+            "major_code": app.major.code if app.major else "",
+            "major_nv2_name": app.major_nv2.name if app.major_nv2 else None,
+            "admitted_major_name": app.admitted_major_name,
+            "status": app.status,
+            "created_at": app.created_at,
+            "payment": payment_info,
+            "is_masked": True
+        }
 
 @router.patch("/applications/{app_id}/status")
-def update_application_status(app_id: int, data: ApplicationStatusUpdate, db: Session = Depends(get_db)):
-    """[Cán bộ Admin] Duyệt hồ sơ (HOP_LE hoặc TU_CHOI)"""
+def update_application_status(app_id: int, data: ApplicationStatusUpdate, request: Request, db: Session = Depends(get_db)):
+    """[Cán bộ / Admin] Duyệt hồ sơ (HOP_LE hoặc TU_CHOI) có ghi chú cán bộ"""
+    curr_user = get_current_user_from_req(request, db)
+    if curr_user and curr_user.role not in ["OFFICER", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Chỉ Cán bộ tuyển sinh hoặc Admin mới có quyền duyệt hồ sơ!")
+
     app = db.query(AdmissionApplication).filter(AdmissionApplication.id == app_id).first()
     if not app:
         raise HTTPException(status_code=404, detail="Hồ sơ không tồn tại!")
 
     app.status = data.status
+    if data.officer_note is not None:
+        app.officer_note = data.officer_note
     db.commit()
-    return {"message": "Cập nhật trạng thái hồ sơ thành công", "status": app.status}
+    return {"message": "Cập nhật trạng thái hồ sơ thành công", "status": app.status, "officer_note": app.officer_note}
 
 @router.post("/run-virtual-filtering")
-def run_virtual_filtering(major_id: int, db: Session = Depends(get_db)):
+def run_virtual_filtering(major_id: int, request: Request, db: Session = Depends(get_db)):
     """
-    [Cán bộ Admin] THUẬT TOÁN LỌC ẢO 2 NGUYỆN VỌNG (NV1 VÀ NV2)
-    1. Lấy ứng viên đăng ký NV1 vào ngành này có hồ sơ HOP_LE và ĐÃ THANH TOÁN (PAID).
-    2. Sắp xếp điểm xét tuyển từ cao xuống thấp.
-    3. Cắt top N theo chỉ tiêu Quota -> Trúng tuyển NV1.
-    4. Các thí sinh còn lại (trượt NV1) nếu có đăng ký NV2 vào các ngành khác sẽ được chuyển tiếp xét ở NV2!
-    5. Cập nhật điểm chuẩn chính thức.
+    [Cán bộ / Admin] THUẬT TOÁN LỌC ẢO ĐA NGUYỆN VỌNG & TIÊU CHÍ PHỤ
+    Tiêu chuẩn xếp hạng:
+    1. Tổng điểm xét tuyển từ cao xuống thấp.
+    2. Tiêu chí phụ 1 (Tie-breaker): Thí sinh đăng ký NV1 được ưu tiên trúng tuyển hơn NV2 khi bằng điểm.
+    3. Tiêu chí phụ 2: Thời gian nộp hồ sơ sớm hơn được ưu tiên.
+    4. Thí sinh trượt NV1 tự động được bảo lưu và chuyển tiếp xét ở NV2.
     """
+    curr_user = get_current_user_from_req(request, db)
+    if curr_user and curr_user.role not in ["OFFICER", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Chỉ Cán bộ tuyển sinh hoặc Admin mới có quyền chạy lọc ảo!")
+
     major = db.query(Major).filter(Major.id == major_id).first()
     if not major:
         raise HTTPException(status_code=404, detail="Ngành không tồn tại!")
@@ -212,16 +304,22 @@ def run_virtual_filtering(major_id: int, db: Session = Depends(get_db)):
         AdmissionApplication.major_id == major_id,
         AdmissionApplication.status.in_(["HOP_LE", "TRUNG_TUYEN_NV1", "KHONG_TRUNG_TUYEN", "TRUNG_TUYEN_NV2"]),
         PaymentTransaction.status == "PAID"
-    ).order_by(AdmissionApplication.score.desc()).all()
+    ).all()
 
     # 2. Thí sinh trượt NV1 ở ngành khác nhưng đăng ký NV2 vào ngành này
     nv2_candidates = db.query(AdmissionApplication).join(PaymentTransaction).filter(
         AdmissionApplication.major_nv2_id == major_id,
         AdmissionApplication.status.in_(["KHONG_TRUNG_TUYEN"]),
         PaymentTransaction.status == "PAID"
-    ).order_by(AdmissionApplication.score.desc()).all()
+    ).all()
 
-    all_eligible = sorted(nv1_candidates + nv2_candidates, key=lambda x: x.score, reverse=True)
+    # Sắp xếp với tiêu chí phụ tie-breaking
+    def get_sorting_rank(c):
+        is_nv1 = 1 if c.major_id == major_id else 0
+        ts = c.created_at.timestamp() if c.created_at else 0
+        return (c.score, is_nv1, -ts)
+
+    all_eligible = sorted(nv1_candidates + nv2_candidates, key=get_sorting_rank, reverse=True)
 
     if not all_eligible:
         return {

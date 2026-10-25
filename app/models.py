@@ -14,7 +14,7 @@ class User(Base):
     password = Column(String(200), nullable=False) # Đã được mã hóa băm mật khẩu
     full_name = Column(String(150), nullable=False)
     phone = Column(String(20), nullable=True)
-    role = Column(String(20), default="STUDENT") # STUDENT hoặc ADMIN
+    role = Column(String(20), default="STUDENT") # STUDENT (Thí sinh), OFFICER (Cán bộ tuyển sinh), ADMIN (Quản trị toàn quyền)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     applications = relationship("AdmissionApplication", back_populates="user")
@@ -80,6 +80,7 @@ class AdmissionApplication(Base):
 
     status = Column(String(50), default="CHO_DUYET") 
     # Trạng thái: CHO_DUYET, HOP_LE, TU_CHOI, TRUNG_TUYEN_NV1, TRUNG_TUYEN_NV2, KHONG_TRUNG_TUYEN
+    officer_note = Column(Text, nullable=True) # Ghi chú của cán bộ tuyển sinh khi duyệt hồ sơ
     
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 

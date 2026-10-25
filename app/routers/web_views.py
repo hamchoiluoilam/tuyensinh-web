@@ -77,11 +77,11 @@ def logout_view():
     resp.delete_cookie("user_role")
     return resp
 
-# --- ĐĂNG NHẬP ADMIN ---
+# --- ĐĂNG NHẬP ADMIN & CÁN BỘ ---
 @router.get("/admin/login")
 def admin_login_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
-    if user and user.role == "ADMIN":
+    if user and user.role in ["ADMIN", "OFFICER"]:
         return RedirectResponse(url="/admin")
     return templates.TemplateResponse("admin_login.html", {"request": request, "user": None})
 
@@ -94,7 +94,7 @@ def student_portal(request: Request, db: Session = Depends(get_db)):
 
     majors = db.query(Major).all()
     fees = db.query(FeeConfig).all()
-    # Lấy hồ sơ và ticket của chính học sinh này
+    # Lấy hồ sơ và ticket của chính học sinh này (Strict User Scoping)
     my_applications = db.query(AdmissionApplication).filter(
         (AdmissionApplication.user_id == user.id) | (AdmissionApplication.email == user.email)
     ).order_by(AdmissionApplication.created_at.desc()).all()
@@ -112,12 +112,12 @@ def student_portal(request: Request, db: Session = Depends(get_db)):
         "my_tickets": my_tickets
     })
 
-# --- CỔNG ADMIN (YÊU CẦU QUYỀN ADMIN) ---
+# --- CỔNG QUẢN TRỊ & TÁC NGHIỆP CÁN BỘ (YÊU CẦU QUYỀN OFFICER HOẶC ADMIN) ---
 @router.get("/admin")
 def admin_portal(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
-    if not user or user.role != "ADMIN":
-        return RedirectResponse(url="/admin/login?msg=admin_required")
+    if not user or user.role not in ["ADMIN", "OFFICER"]:
+        return RedirectResponse(url="/admin/login?msg=staff_required")
 
     majors = db.query(Major).all()
     applications = db.query(AdmissionApplication).order_by(AdmissionApplication.score.desc()).all()
@@ -138,7 +138,8 @@ def admin_portal(request: Request, db: Session = Depends(get_db)):
         "tickets": tickets,
         "revenue": revenue,
         "paid_count": len(paid_tx),
-        "total_count": len(transactions)
+        "total_count": len(transactions),
+        "is_admin": user.role == "ADMIN"
     })
 
 # --- BIÊN LAI ĐIỆN TỬ (IN / XUẤT PHIẾU THU LỆ PHÍ) ---
@@ -148,7 +149,18 @@ def receipt_page(tx_code: str, request: Request, db: Session = Depends(get_db)):
     if not tx:
         raise HTTPException(status_code=404, detail="Không tìm thấy hóa đơn thanh toán!")
     app = db.query(AdmissionApplication).filter(AdmissionApplication.id == tx.application_id).first()
-    major = db.query(Major).filter(Major.id == app.major_id).first() if app else None
+    if not app:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ tương ứng!")
+
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url=f"/login?msg=please_login&redirect=/receipt/{tx_code}")
+
+    # Bảo mật quyền sở hữu: Thí sinh chỉ được xem biên lai của chính mình!
+    if user.role == "STUDENT" and (app.user_id != user.id and app.email != user.email):
+        raise HTTPException(status_code=403, detail="Bảo mật: Bạn không có quyền truy cập biên lai của thí sinh khác!")
+
+    major = db.query(Major).filter(Major.id == app.major_id).first()
     return templates.TemplateResponse("receipt.html", {
         "request": request,
         "tx": tx,

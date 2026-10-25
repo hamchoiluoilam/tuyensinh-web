@@ -36,7 +36,7 @@ app.include_router(web_views.router)
 def seed_demo_data():
     db = SessionLocal()
     try:
-        # 1. Tạo tài khoản mẫu (Admin & Học sinh) với mật khẩu bảo mật băm SHA-256 + Salt
+        # 1. Tạo tài khoản mẫu (Admin, Cán Bộ Tuyển Sinh & Thí Sinh) với mật khẩu bảo mật băm SHA-256 + Salt
         if db.query(User).count() == 0:
             admin_user = User(
                 email="admin@tuyensinh.edu.vn",
@@ -45,6 +45,13 @@ def seed_demo_data():
                 phone="0243888999",
                 role="ADMIN"
             )
+            officer_user = User(
+                email="canbo@tuyensinh.edu.vn",
+                password=hash_password("canbo123"),
+                full_name="Cán Bộ Khảo Thí & Tuyển Sinh",
+                phone="0243777888",
+                role="OFFICER"
+            )
             student_user = User(
                 email="student@gmail.com",
                 password=hash_password("123456"),
@@ -52,7 +59,7 @@ def seed_demo_data():
                 phone="0987654321",
                 role="STUDENT"
             )
-            db.add_all([admin_user, student_user])
+            db.add_all([admin_user, officer_user, student_user])
             db.commit()
 
         # 2. Tạo 40 ngành tuyển sinh và các môn học chi tiết

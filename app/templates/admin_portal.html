@@ -5,11 +5,16 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold mb-1 text-danger"><i class="bi bi-shield-lock-fill"></i> Trung Tâm Quản Trị Tuyển Sinh (Admin)</h2>
-        <p class="text-muted mb-0">Điều hành 3 phân hệ: M02 Tuyển sinh & Lọc ảo | M07 Kế toán & Lệ phí | M12 Tư vấn hỗ trợ</p>
+        {% if is_admin %}
+            <h2 class="fw-bold mb-1 text-danger"><i class="bi bi-shield-check"></i> Trung Tâm Quản Trị Tuyển Sinh (ADMIN PORTAL)</h2>
+            <p class="text-muted mb-0">Quyền hạn: <strong>Quản Trị Viên Toàn Quyền</strong> | Điều hành 40 ngành, Lọc ảo, Cấu hình biểu phí & Tư vấn</p>
+        {% else %}
+            <h2 class="fw-bold mb-1 text-primary"><i class="bi bi-person-workspace"></i> Cổng Tác Nghiệp Cán Bộ Tuyển Sinh (OFFICER PORTAL)</h2>
+            <p class="text-muted mb-0">Quyền hạn: <strong>Cán Bộ Khảo Thí & Tuyển Sinh</strong> | Tiếp nhận hồ sơ, Xét duyệt hợp lệ, Chạy lọc ảo & Hỗ trợ thí sinh</p>
+        {% endif %}
     </div>
     <div>
-        <a href="/logout" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Đăng xuất Admin</a>
+        <a href="/logout" class="btn btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
     </div>
 </div>
 
@@ -133,14 +138,73 @@
             </div>
         </div>
 
-        <!-- Bảng danh sách hồ sơ -->
+        <!-- Bảng danh sách hồ sơ với Bộ Lọc Đa Chiều Nâng Cao -->
         <div class="card card-custom p-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <h5 class="fw-bold mb-0">Danh Sách Toàn Bộ Hồ Sơ Xét Tuyển ({{ applications|length }})</h5>
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="fw-bold mb-0">Danh Sách Hồ Sơ Xét Tuyển</h5>
+                    <span id="filterCountBadge" class="badge bg-primary fs-6">Hiển thị {{ applications|length }} / {{ applications|length }}</span>
+                </div>
                 <div class="d-flex gap-2">
-                    <input type="text" id="candidateSearchInput" onkeyup="filterCandidatesTable()" class="form-control form-control-sm" placeholder="Tìm theo tên hoặc CCCD...">
+                    <button class="btn btn-sm btn-outline-success fw-semibold" onclick="exportCandidatesToCSV()">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Xuất Báo Cáo CSV
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="resetAllFilters()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Xóa Bộ Lọc
+                    </button>
                 </div>
             </div>
+
+            <!-- Thanh Công Cụ Bộ Lọc Đa Tiêu Chí (Multi-Facet Filter Toolbar) -->
+            <div class="p-3 bg-light rounded-3 border mb-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-muted mb-1">Lọc theo Ngành (NV1):</label>
+                        <select id="filterNv1Major" class="form-select form-select-sm" onchange="filterCandidatesMultiFacet()">
+                            <option value="ALL">-- Tất cả 40 ngành --</option>
+                            {% for m in majors %}
+                            <option value="{{ m.id }}">{{ m.name }} ({{ m.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-muted mb-1">Trạng thái hồ sơ:</label>
+                        <select id="filterStatus" class="form-select form-select-sm" onchange="filterCandidatesMultiFacet()">
+                            <option value="ALL">-- Tất cả trạng thái --</option>
+                            <option value="CHO_DUYET">Chờ duyệt</option>
+                            <option value="HOP_LE">Hợp Lệ</option>
+                            <option value="TRUNG_TUYEN_NV1">Trúng tuyển NV1</option>
+                            <option value="TRUNG_TUYEN_NV2">Trúng tuyển NV2</option>
+                            <option value="KHONG_TRUNG_TUYEN">Không trúng tuyển</option>
+                            <option value="TU_CHOI">Bị từ chối</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-muted mb-1">Tình trạng Lệ phí:</label>
+                        <select id="filterPayment" class="form-select form-select-sm" onchange="filterCandidatesMultiFacet()">
+                            <option value="ALL">-- Tất cả --</option>
+                            <option value="PAID">Đã nộp đủ (PAID)</option>
+                            <option value="UNPAID">Chưa nộp (UNPAID)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold text-muted mb-1">Phương thức xét:</label>
+                        <select id="filterMethod" class="form-select form-select-sm" onchange="filterCandidatesMultiFacet()">
+                            <option value="ALL">-- Tất cả --</option>
+                            <option value="HOC_BA">Học bạ THPT</option>
+                            <option value="THPT">Điểm thi THPT</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-muted mb-1">Tìm kiếm nhanh:</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" id="candidateSearchInput" onkeyup="filterCandidatesMultiFacet()" class="form-control" placeholder="Tên, CCCD, Mã hồ sơ...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle" id="candidatesTable">
                     <thead class="table-light">
@@ -148,6 +212,7 @@
                             <th>Mã HS</th>
                             <th>Họ Tên & CCCD</th>
                             <th>Nguyện Vọng Đăng Ký</th>
+                            <th>Phương Thức</th>
                             <th>Điểm</th>
                             <th>Minh Chứng</th>
                             <th>Lệ Phí (M07)</th>
@@ -157,7 +222,12 @@
                     </thead>
                     <tbody>
                         {% for app in applications %}
-                        <tr>
+                        <tr data-major="{{ app.major_id }}" 
+                            data-status="{{ app.status }}" 
+                            data-payment="{{ app.payment.status if app.payment else 'UNPAID' }}" 
+                            data-method="{{ app.method }}" 
+                            data-score="{{ app.score }}" 
+                            data-search="{{ app.app_code|lower }} {{ app.full_name|lower }} {{ app.id_card }} {{ app.phone }}">
                             <td><strong>{{ app.app_code }}</strong></td>
                             <td>
                                 <strong>{{ app.full_name }}</strong><br>
@@ -170,6 +240,13 @@
                                 {% endif %}
                                 {% if app.admitted_major_name %}
                                 <div class="text-success fw-bold small mt-1"><i class="bi bi-check-circle-fill"></i> Trúng tuyển: {{ app.admitted_major_name }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if app.method == 'HOC_BA' %}
+                                    <span class="badge bg-light text-dark border">Học bạ</span>
+                                {% else %}
+                                    <span class="badge bg-light text-primary border">Điểm THPT</span>
                                 {% endif %}
                             </td>
                             <td><span class="fw-bold text-primary fs-6">{{ app.score }}</span></td>
@@ -228,7 +305,7 @@
         <!-- Biểu phí xét tuyển cấu hình -->
         <div class="card card-custom p-4 mb-4 bg-light border">
             <h5 class="fw-bold text-success mb-2"><i class="bi bi-gear-fill"></i> Cấu Hình Biểu Phí Xét Tuyển Toàn Trường</h5>
-            <p class="text-muted small mb-3">Admin có thể tùy chỉnh mức thu lệ phí theo từng đợt tuyển sinh. Số tiền trên mã VietQR sẽ tự động áp dụng theo mức phí này.</p>
+            <p class="text-muted small mb-3">Số tiền trên mã VietQR sẽ tự động áp dụng theo mức phí này. (Chức năng điều chỉnh mức phí phân quyền độc quyền cho Quản trị viên Admin).</p>
             {% for f in fees %}
             <div class="row align-items-center bg-white p-3 rounded shadow-sm mb-2">
                 <div class="col-md-5">
@@ -239,9 +316,13 @@
                     <span class="fs-5 fw-bold text-danger">{{ "{:,.0f}".format(f.amount) }} VNĐ</span>
                 </div>
                 <div class="col-md-4 text-end">
+                    {% if is_admin %}
                     <button class="btn btn-sm btn-outline-success fw-semibold" onclick="openFeeModal({{ f.id }}, '{{ f.fee_name }}', {{ f.amount }})">
-                        <i class="bi bi-pencil-square"></i> Điều Chỉnh Mức Phí
+                        <i class="bi bi-pencil-square"></i> Điều Chỉnh Mức Phí (Admin)
                     </button>
+                    {% else %}
+                    <span class="badge bg-light text-muted border py-2 px-3"><i class="bi bi-lock-fill"></i> Chỉ Admin có quyền sửa biểu phí</span>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -425,14 +506,84 @@
 
 {% block scripts %}
 <script>
-// --- Tìm kiếm bảng thí sinh ---
-function filterCandidatesTable() {
-    const filter = document.getElementById("candidateSearchInput").value.toLowerCase();
+// --- Bộ Lọc Đa Tiêu Chí Thí Sinh (Multi-Facet Filter) ---
+function filterCandidatesMultiFacet() {
+    const majorFilter = document.getElementById("filterNv1Major").value;
+    const statusFilter = document.getElementById("filterStatus").value;
+    const paymentFilter = document.getElementById("filterPayment").value;
+    const methodFilter = document.getElementById("filterMethod").value;
+    const keyword = document.getElementById("candidateSearchInput").value.toLowerCase().trim();
+
     const rows = document.querySelectorAll("#candidatesTable tbody tr");
+    let visibleCount = 0;
+
     rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
+        const rowMajor = row.getAttribute("data-major");
+        const rowStatus = row.getAttribute("data-status");
+        const rowPayment = row.getAttribute("data-payment");
+        const rowMethod = row.getAttribute("data-method");
+        const rowSearch = row.getAttribute("data-search") || "";
+
+        const matchMajor = (majorFilter === "ALL" || rowMajor === majorFilter);
+        const matchStatus = (statusFilter === "ALL" || rowStatus === statusFilter);
+        const matchPayment = (paymentFilter === "ALL" || rowPayment === paymentFilter);
+        const matchMethod = (methodFilter === "ALL" || rowMethod === methodFilter);
+        const matchSearch = (!keyword || rowSearch.includes(keyword));
+
+        if (matchMajor && matchStatus && matchPayment && matchMethod && matchSearch) {
+            row.style.display = "";
+            visibleCount++;
+        } else {
+            row.style.display = "none";
+        }
     });
+
+    const badge = document.getElementById("filterCountBadge");
+    if (badge) {
+        badge.textContent = `Hiển thị ${visibleCount} / ${rows.length}`;
+    }
+}
+
+function resetAllFilters() {
+    document.getElementById("filterNv1Major").value = "ALL";
+    document.getElementById("filterStatus").value = "ALL";
+    document.getElementById("filterPayment").value = "ALL";
+    document.getElementById("filterMethod").value = "ALL";
+    document.getElementById("candidateSearchInput").value = "";
+    filterCandidatesMultiFacet();
+}
+
+function exportCandidatesToCSV() {
+    const rows = document.querySelectorAll("#candidatesTable tbody tr");
+    const csvRows = [
+        ["Mã Hồ Sơ", "Họ Tên", "Số CCCD", "Nguyện Vọng", "Phương Thức", "Điểm", "Lệ Phí", "Trạng Thái"]
+    ];
+
+    rows.forEach(row => {
+        if (row.style.display !== "none") {
+            const cols = row.querySelectorAll("td");
+            if (cols.length >= 8) {
+                const appCode = cols[0].innerText.trim();
+                const nameAndCccd = cols[1].innerText.replace(/\n/g, " - ").trim();
+                const major = cols[2].innerText.replace(/\n/g, " | ").trim();
+                const method = cols[3].innerText.trim();
+                const score = cols[4].innerText.trim();
+                const payment = cols[6].innerText.trim();
+                const status = cols[7].innerText.trim();
+                csvRows.push([`"${appCode}"`, `"${nameAndCccd}"`, `""`, `"${major}"`, `"${method}"`, `"${score}"`, `"${payment}"`, `"${status}"`]);
+            }
+        }
+    });
+
+    const csvContent = "\uFEFF" + csvRows.map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `danh_sach_tuyen_sinh_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // --- Quản lý chỉ tiêu & điểm chuẩn ngành (M02) ---

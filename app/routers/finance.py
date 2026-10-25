@@ -1,5 +1,5 @@
 import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -7,6 +7,7 @@ from typing import List, Optional
 from ..database import get_db
 from ..models import FeeConfig, PaymentTransaction, AdmissionApplication
 from ..schemas import PaymentOut, FeeConfigUpdate
+from .auth import get_current_user_from_req
 
 router = APIRouter(prefix="/api/finance", tags=["M07 - Tài chính kế toán (Người 2)"])
 
@@ -16,8 +17,12 @@ def get_fee_configs(db: Session = Depends(get_db)):
     return db.query(FeeConfig).all()
 
 @router.patch("/fee-configs/{config_id}")
-def update_fee_config(config_id: int, data: FeeConfigUpdate, db: Session = Depends(get_db)):
-    """[Kế toán] Cập nhật mức thu lệ phí xét tuyển"""
+def update_fee_config(config_id: int, data: FeeConfigUpdate, request: Request, db: Session = Depends(get_db)):
+    """[Chỉ Admin] Cập nhật mức thu lệ phí xét tuyển của trường"""
+    curr_user = get_current_user_from_req(request, db)
+    if curr_user and curr_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Chỉ Quản trị viên cấp cao (ADMIN) mới có quyền điều chỉnh biểu phí lệ phí!")
+
     fee = db.query(FeeConfig).filter(FeeConfig.id == config_id).first()
     if not fee:
         raise HTTPException(status_code=404, detail="Không tìm thấy cấu hình biểu phí!")
@@ -93,13 +98,18 @@ def simulate_payment(tx_code: str, db: Session = Depends(get_db)):
     }
 
 @router.get("/receipt/{tx_code}")
-def get_payment_receipt(tx_code: str, db: Session = Depends(get_db)):
-    """[Biên lai điện tử] Lấy dữ liệu in phiếu thu biên lai cho thí sinh"""
+def get_payment_receipt(tx_code: str, request: Request, db: Session = Depends(get_db)):
+    """[Biên lai điện tử] Lấy dữ liệu in phiếu thu biên lai cho thí sinh (Có kiểm tra bảo mật quyền sở hữu)"""
     tx = db.query(PaymentTransaction).filter(PaymentTransaction.tx_code == tx_code).first()
     if not tx or tx.status != "PAID":
         raise HTTPException(status_code=400, detail="Giao dịch chưa thanh toán hoặc không tồn tại để xuất biên lai!")
 
     app = tx.application
+    curr_user = get_current_user_from_req(request, db)
+    if curr_user and curr_user.role == "STUDENT":
+        if app.user_id != curr_user.id and app.email != curr_user.email:
+            raise HTTPException(status_code=403, detail="Bảo mật: Bạn không có quyền truy cập biên lai của thí sinh khác!")
+
     return {
         "receipt_number": f"BL-{tx.tx_code}",
         "tx_code": tx.tx_code,

@@ -76,6 +76,25 @@ class ApplicationCreate(BaseModel):
 
 class ApplicationStatusUpdate(BaseModel):
     status: str # HOP_LE, TU_CHOI, etc.
+    officer_note: Optional[str] = None
+
+class PublicVerifyLookupRequest(BaseModel):
+    app_code: str
+    id_card_last4: str # 4 số cuối CCCD để xác minh danh tính
+
+class PublicVerifyLookupOut(BaseModel):
+    app_code: str
+    full_name: str
+    id_card_masked: str
+    phone_masked: str
+    major_name: str
+    major_code: str
+    major_nv2_name: Optional[str] = None
+    score: float
+    status: str
+    admitted_major_name: Optional[str] = None
+    payment_status: str
+    created_at: datetime
 
 class ApplicationOut(BaseModel):
     id: int
@@ -87,6 +106,7 @@ class ApplicationOut(BaseModel):
     method: str
     score: float
     status: str
+    officer_note: Optional[str] = None
     major_id: int
     major_nv2_id: Optional[int] = None
     admitted_major_name: Optional[str] = None
@@ -168,3 +188,5 @@ class TicketOut(BaseModel):
 class AIChatQuery(BaseModel):
     query: str
     score: Optional[float] = None
+    combination: Optional[str] = None # Tổ hợp môn (A00, A01, D01, B00...)
+    history: Optional[List[dict]] = None # Lịch sử chat [{role: 'user'|'model', text: '...'}]

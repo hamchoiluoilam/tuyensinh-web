@@ -42,28 +42,42 @@
     </div>
 </div>
 
-<!-- Tra cứu nhanh hồ sơ -->
+<!-- Tra cứu nhanh hồ sơ công khai (Xác minh danh tính 2 yếu tố 2FA & Bảo mật dữ liệu) -->
 <div id="lookup-section" class="row justify-content-center mb-5">
-    <div class="col-lg-9">
-        <div class="card card-modern p-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <div class="bg-primary bg-opacity-10 p-2 rounded-circle text-primary">
-                    <i class="bi bi-search fs-5"></i>
+    <div class="col-lg-10">
+        <div class="card card-modern p-4 border-start border-primary border-4 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary bg-opacity-10 p-2 rounded-circle text-primary">
+                        <i class="bi bi-shield-check fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">Tra Cứu Kết Quả Xét Tuyển & Tình Trạng Hồ Sơ</h5>
+                        <small class="text-muted"><i class="bi bi-lock-fill text-success"></i> Bảo mật 2 lớp: Yêu cầu xác minh Mã hồ sơ & 4 số cuối CCCD</small>
+                    </div>
                 </div>
-                <div>
-                    <h5 class="fw-bold mb-0 text-dark">Tra Cứu Hồ Sơ & Kết Quả Tuyển Sinh</h5>
-                    <small class="text-muted">Nhập Số CCCD hoặc Mã hồ sơ để kiểm tra tiến độ xét duyệt và kết quả</small>
-                </div>
+                <span class="badge bg-light text-dark border"><i class="bi bi-info-circle me-1"></i> Chuẩn Bảo Mật Dữ Liệu</span>
             </div>
             
-            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border">
-                <input type="text" id="lookupInput" class="form-control border-0 ps-3 fs-6" placeholder="Ví dụ: TS2026-100001 hoặc số CCCD 001202001111...">
-                <button class="btn btn-primary px-4 fw-bold" onclick="handleLookup()">
-                    <i class="bi bi-search me-1"></i> Tra Cứu
-                </button>
-            </div>
+            <form onsubmit="handleSecureLookup(event)">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-semibold text-muted mb-1">Mã hồ sơ xét tuyển (*)</label>
+                        <input type="text" id="lookupAppCode" class="form-control" placeholder="Ví dụ: TS2026-100001" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-muted mb-1">4 số cuối CCCD (*)</label>
+                        <input type="text" id="lookupIdLast4" class="form-control" maxlength="4" placeholder="VD: 1111" required pattern="\d{4}">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">
+                            <i class="bi bi-shield-lock me-1"></i> Xác Minh & Tra Cứu
+                        </button>
+                    </div>
+                </div>
+            </form>
             
-            <div id="lookupResult" class="d-none alert mt-3 rounded-3"></div>
+            <div id="lookupResult" class="d-none mt-3"></div>
         </div>
     </div>
 </div>
@@ -205,44 +219,58 @@ function filterMajors() {
     });
 }
 
-async function handleLookup() {
-    const val = document.getElementById('lookupInput').value.trim();
+async function handleSecureLookup(e) {
+    e.preventDefault();
+    const appCode = document.getElementById('lookupAppCode').value.trim();
+    const idLast4 = document.getElementById('lookupIdLast4').value.trim();
     const resBox = document.getElementById('lookupResult');
-    if (!val) {
-        alert("Vui lòng nhập Mã hồ sơ hoặc CCCD!");
-        return;
-    }
+
     resBox.className = "alert alert-info mt-3 rounded-3";
-    resBox.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Đang tra cứu dữ liệu...';
+    resBox.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Đang xác minh danh tính và tra cứu dữ liệu...';
     resBox.classList.remove('d-none');
 
     try {
-        const res = await fetch(`/api/admissions/lookup/${encodeURIComponent(val)}`);
+        const res = await fetch('/api/admissions/public-verify-lookup', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ app_code: appCode, id_card_last4: idLast4 })
+        });
+        const data = await res.json();
         if (!res.ok) {
             resBox.className = "alert alert-warning mt-3 rounded-3";
-            resBox.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Không tìm thấy hồ sơ nào khớp với thông tin "${val}".`;
+            resBox.innerHTML = `<i class="bi bi-shield-x text-danger me-2"></i><strong>Xác minh thất bại:</strong> ${data.detail || 'Không tìm thấy hồ sơ hoặc sai 4 số cuối CCCD.'}`;
             return;
         }
-        const data = await res.json();
-        let statusBadge = '<span class="badge bg-secondary badge-pill">Chờ duyệt</span>';
-        if (data.status === 'HOP_LE') statusBadge = '<span class="badge bg-primary badge-pill">Hồ sơ Hợp Lệ</span>';
-        if (data.status === 'TRUNG_TUYEN') statusBadge = '<span class="badge bg-success badge-pill fs-6">ĐÃ TRÚNG TUYỂN 🎉</span>';
-        if (data.status === 'KHONG_TRUNG_TUYEN') statusBadge = '<span class="badge bg-danger badge-pill">Không trúng tuyển</span>';
 
-        let payBadge = data.payment.status === 'PAID' 
-            ? '<span class="badge bg-success badge-pill">Đã Đóng Lệ Phí</span>' 
-            : '<span class="badge bg-danger badge-pill">Chưa Nộp Tiền</span>';
+        let statusBadge = '<span class="badge bg-secondary">Chờ xét duyệt</span>';
+        if (data.status === 'HOP_LE') statusBadge = '<span class="badge bg-primary">Hồ sơ Hợp Lệ</span>';
+        else if (data.status === 'TRUNG_TUYEN_NV1') statusBadge = '<span class="badge bg-success fw-bold">TRÚNG TUYỂN NV1 🎉</span>';
+        else if (data.status === 'TRUNG_TUYEN_NV2') statusBadge = '<span class="badge bg-info text-dark fw-bold">TRÚNG TUYỂN NV2 🎉</span>';
+        else if (data.status === 'KHONG_TRUNG_TUYEN') statusBadge = '<span class="badge bg-danger">Không trúng tuyển</span>';
 
-        resBox.className = "alert alert-light border shadow-sm mt-3 rounded-3";
+        let payBadge = data.payment_status === 'PAID' 
+            ? '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Đã Nộp Lệ Phí</span>' 
+            : '<span class="badge bg-danger"><i class="bi bi-exclamation-circle"></i> Chưa Nộp Tiền</span>';
+
+        resBox.className = "alert alert-light border shadow-sm mt-3 rounded-3 p-3";
         resBox.innerHTML = `
-            <h5 class="fw-bold text-primary mb-3">Kết quả tra cứu: ${data.app_code}</h5>
-            <div class="row">
-                <div class="col-md-6 mb-2"><strong>Họ tên:</strong> ${data.full_name}</div>
-                <div class="col-md-6 mb-2"><strong>CCCD:</strong> ${data.id_card}</div>
-                <div class="col-md-6 mb-2"><strong>Ngành:</strong> ${data.major_name} (${data.major_code})</div>
-                <div class="col-md-6 mb-2"><strong>Điểm xét tuyển:</strong> <span class="badge bg-warning text-dark fs-6">${data.score}</span></div>
-                <div class="col-md-6 mb-2"><strong>Trạng thái:</strong> ${statusBadge}</div>
-                <div class="col-md-6 mb-2"><strong>Lệ phí:</strong> ${payBadge}</div>
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <h5 class="fw-bold text-primary mb-0"><i class="bi bi-patch-check-fill text-success"></i> Kết Quả Tra Cứu: ${data.app_code}</h5>
+                <span class="small text-muted"><i class="bi bi-shield-lock"></i> Đã xác thực danh tính</span>
+            </div>
+            <div class="row g-2">
+                <div class="col-md-6"><strong>Họ và tên thí sinh:</strong> ${data.full_name}</div>
+                <div class="col-md-6"><strong>Số CCCD (bảo mật):</strong> <span class="font-monospace">${data.id_card_masked}</span></div>
+                <div class="col-md-6"><strong>Nguyện vọng 1:</strong> ${data.major_name} (${data.major_code})</div>
+                <div class="col-md-6"><strong>Nguyện vọng 2:</strong> ${data.major_nv2_name || '<em class="text-muted">Không đăng ký</em>'}</div>
+                <div class="col-md-6"><strong>Điểm xét tuyển:</strong> <span class="badge bg-warning text-dark fs-6">${data.score}</span></div>
+                <div class="col-md-6"><strong>Trạng thái hồ sơ:</strong> ${statusBadge}</div>
+                <div class="col-md-6"><strong>Tình trạng lệ phí:</strong> ${payBadge}</div>
+                <div class="col-md-6"><strong>Kết quả chốt:</strong> ${data.admitted_major_name ? '<strong class="text-success">' + data.admitted_major_name + '</strong>' : '<span class="text-muted">Đang trong thời gian xét tuyển</span>'}</div>
+            </div>
+            <div class="mt-3 pt-2 border-top small text-muted d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-shield-shaded text-success"></i> Minh chứng học bạ và thông tin liên lạc được ẩn để bảo vệ quyền riêng tư.</span>
+                <a href="/login" class="btn btn-sm btn-outline-primary">Đăng nhập tài khoản &raquo;</a>
             </div>
         `;
     } catch(err) {

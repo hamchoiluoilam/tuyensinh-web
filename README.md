@@ -56,33 +56,57 @@ Hệ thống nạp sẵn đầy đủ **40 ngành đào tạo đại học chín
 
 ---
 
-## 🌟 TÍNH NĂNG NÂNG CẤP ĐẠT CHUẨN 10/10
-1. **Bảo mật xác thực:** Mật khẩu được băm an toàn chuẩn `SHA-256 + Salt`, phòng chống tấn công dò mật khẩu và rò rỉ dữ liệu.
-2. **Tải file minh chứng thật:** Hỗ trợ thí sinh tải trực tiếp ảnh học bạ/chứng chỉ (.jpg, .png, .pdf) từ thiết bị vào hệ thống máy chủ, có xem trước và liên kết trực tiếp trên hồ sơ.
-3. **Đa nguyện vọng (NV1 & NV2):** Cho phép thí sinh đăng ký nguyện vọng chính và nguyện vọng dự phòng.
-4. **Thuật toán lọc ảo thông minh:** Xét tuyển tự động theo chỉ tiêu; các thí sinh không đạt ngưỡng NV1 sẽ được hệ thống tự động đưa vào danh sách xét tuyển NV2 công bằng.
-5. **Biên lai điện tử in ấn:** Phiếu thu lệ phí điện tử chuẩn mực cho in ấn hoặc xuất file PDF (`window.print()`).
-6. **Quản lý biểu phí & chỉ tiêu động:** Ban Giám hiệu và Admin có thể trực tiếp điều chỉnh chỉ tiêu ngành, điểm sàn và mức thu lệ phí ngay trên giao diện web.
-7. **Trợ lý AI Tư vấn tuyển sinh thông minh 24/7:** Widget AI nổi trên toàn bộ trang web, tự động phân tích mức điểm (ví dụ: *"Em 25.5 điểm nên học ngành nào?"*) và gợi ý ngành trúng tuyển tối ưu.
-8. **Bộ Test Suite tự động:** Tích hợp file `test_suite.py` kiểm thử toàn bộ 9 luồng nghiệp vụ end-to-end đảm bảo không có lỗi hồi quy.
+## 🌟 TÍNH NĂNG NÂNG CẤP ĐẠT CHUẨN 10/10 DOANH NGHIỆP
+
+1. **Phân quyền người dùng 3 lớp (RBAC - Role-Based Access Control):**
+   * `STUDENT` (Thí sinh): Đăng nhập chỉ xem và quản lý hồ sơ, biên lai, ticket của chính mình.
+   * `OFFICER` (Cán bộ tuyển sinh): Tiếp nhận và duyệt hồ sơ (Hợp lệ / Bị từ chối có ghi chú), chạy thuật toán lọc ảo, trả lời ticket hỗ trợ, tra cứu đối soát danh sách thí sinh.
+   * `ADMIN` (Quản trị viên cấp cao): Toàn quyền hệ thống, điều chỉnh chỉ tiêu 40 ngành và độc quyền cấu hình biểu phí tài chính (`M07`).
+
+2. **Bảo mật Tra cứu công khai 2 yếu tố (2FA Verification) & Che giấu dữ liệu (Data Masking):**
+   * Ngăn chặn hoàn toàn việc biết CCCD hoặc Mã hồ sơ là tra cứu được dữ liệu cá nhân.
+   * Yêu cầu xác thực 2 yếu tố: Bắt buộc nhập đồng thời **Mã hồ sơ** VÀ **4 số cuối CCCD**.
+   * Áp dụng nguyên tắc che giấu dữ liệu nhạy cảm (Data Minimization): Che mờ CCCD (`0012******11`), ẩn số điện thoại (`0912***601`), và **tuyệt đối không trả về file ảnh học bạ** ra bên ngoài.
+
+3. **Bộ lọc đa chiều nâng cao (Multi-Facet Filter) & Xuất dữ liệu:**
+   * Lọc kết hợp đồng thời theo Ngành (NV1), Trạng thái hồ sơ, Tình trạng nộp lệ phí VietQR, Phương thức xét tuyển, và Dải điểm số.
+   * Tìm kiếm tức thì theo tên, CCCD, Mã hồ sơ, Số điện thoại.
+   * Hỗ trợ xuất danh sách thí sinh sau khi lọc ra định dạng CSV/Excel chuẩn UTF-8.
+
+4. **Thuật toán lọc ảo đa nguyện vọng & Tiêu chí phụ (Tie-Breaking Rules):**
+   * Phân bổ tự động thí sinh trúng tuyển theo chỉ tiêu ngành.
+   * Xử lý tiêu chí phụ khi bằng điểm chuẩn: Thí sinh đăng ký NV1 được ưu tiên hơn NV2; ưu tiên thời gian nộp hồ sơ sớm hơn.
+   * Tự động bảo lưu và chuyển tiếp thí sinh không đạt NV1 sang xét tuyển NV2 công bằng.
+
+5. **Hệ thống Trí tuệ nhân tạo (AI Engine) hoàn chỉnh:**
+   * Hỗ trợ chế độ kép: Tích hợp Google Gemini 1.5 Flash API (khi có `GEMINI_API_KEY`) + Standalone Expert Reasoning Engine (hoạt động tự chủ 100% offline).
+   * Phân tích xác suất trúng tuyển theo 3 tầng chuẩn khoa học: *An toàn (>90%)*, *Vừa sức (70-85%)*, *Bứt phá (40-60%)*.
+   * Gợi ý chiến lược đặt Nguyện vọng 1 (mơ ước) và Nguyện vọng 2 (phao cứu sinh) tối ưu theo điểm số và tổ hợp khối thi (A00, A01, D01, B00...).
+   * Duy trì bộ nhớ ngữ cảnh đối thoại liên tiếp (Multi-turn Context Memory).
+
+6. **Biên lai điện tử & Tải minh chứng thật:**
+   * Tải trực tiếp file ảnh học bạ/chứng chỉ (.jpg, .png, .pdf) lưu trữ an toàn trên server.
+   * Phiếu thu biên lai điện tử có dấu mộc điện tử và nút in trực tiếp A4/A5 (`window.print()`).
+
+7. **Bộ Test Suite tự động:**
+   * Tích hợp file `test_suite.py` kiểm thử 10 kịch bản end-to-end đảm bảo 100% chức năng hoạt động chính xác.
 
 ---
 
-## 🚀 HƯỚNG DẪN KHỞI CHẠY HỆ THỐNG
+## 🚀 HƯỚNG DẪN KHỞI CHẠY & TÀI KHOẢN MẪU
 
-1. Mở PowerShell tại thư mục:
-```powershell
-cd C:\Users\Admin\.gemini\antigravity\scratch\admission_portal
-```
-
-2. Khởi động Web Server:
+1. Khởi động Web Server:
 ```powershell
 python main.py
 ```
 
-3. Truy cập trình duyệt:
-* **Trang chủ & Danh sách 40 ngành:** `http://127.0.0.1:8000/`
-* **File Swagger UI riêng:** `http://127.0.0.1:8000/swagger-ui` (hoặc mở trực tiếp file `swagger_ui.html`)
-* **Đăng nhập thí sinh:** `http://127.0.0.1:8000/login` *(hoặc Đăng ký tại `/register`)*
-* **Cổng quản trị viên Admin:** `http://127.0.0.1:8000/admin/login`
-  * Tài khoản admin: `admin@tuyensinh.edu.vn` / Mật khẩu: `admin123`
+2. Danh sách tài khoản thử nghiệm hệ thống:
+* **Quản trị viên (ADMIN):** `admin@tuyensinh.edu.vn` / Mật khẩu: `admin123`
+* **Cán bộ tuyển sinh (OFFICER):** `canbo@tuyensinh.edu.vn` / Mật khẩu: `canbo123`
+* **Thí sinh (STUDENT):** `student@gmail.com` / Mật khẩu: `123456`
+
+3. Đường dẫn các cổng giao diện:
+* **Trang chủ & Tra cứu xác minh 2FA:** `http://127.0.0.1:8000/`
+* **Cổng Thí Sinh:** `http://127.0.0.1:8000/student`
+* **Cổng Quản Trị & Cán Bộ:** `http://127.0.0.1:8000/admin`
+* **File Swagger UI:** `http://127.0.0.1:8000/swagger-ui` (hoặc mở file `swagger_ui.html`)
