@@ -19,7 +19,22 @@ if not os.path.exists(templates_dir):
         if os.path.exists(candidate):
             templates_dir = candidate
             break
+
 templates = Jinja2Templates(directory=templates_dir)
+
+def render_template(request: Request, name: str, context: dict):
+    """
+    Hàm render template tương thích 100% với mọi phiên bản Starlette/FastAPI:
+    - Starlette >= 0.28: TemplateResponse(request=request, name=name, context=context)
+    - Starlette < 0.28: TemplateResponse(name, context)
+    Tránh lỗi TypeError: unhashable type: 'dict' trên môi trường Vercel.
+    """
+    ctx = dict(context)
+    ctx["request"] = request
+    try:
+        return templates.TemplateResponse(request=request, name=name, context=ctx)
+    except TypeError:
+        return templates.TemplateResponse(name, ctx)
 
 router = APIRouter(include_in_schema=False)
 
@@ -51,8 +66,7 @@ def home_page(request: Request, db: Session = Depends(get_db)):
     faqs = db.query(FAQItem).all()
     total_subjects = db.query(Subject).count()
 
-    return templates.TemplateResponse("index.html", {
-        "request": request,
+    return render_template(request, "index.html", {
         "user": user,
         "majors": majors,
         "faqs": faqs,
@@ -69,8 +83,7 @@ def major_detail_page(major_id: int, request: Request, db: Session = Depends(get
     subjects = db.query(Subject).filter(Subject.major_id == major_id).order_by(Subject.semester, Subject.code).all()
     total_credits = sum(s.credits for s in subjects)
 
-    return templates.TemplateResponse("major_detail.html", {
-        "request": request,
+    return render_template(request, "major_detail.html", {
         "user": user,
         "major": major,
         "subjects": subjects,
@@ -83,14 +96,14 @@ def login_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if user and user.role == "STUDENT":
         return RedirectResponse(url="/student")
-    return templates.TemplateResponse("login.html", {"request": request, "user": None})
+    return render_template(request, "login.html", {"user": None})
 
 @router.get("/register")
 def register_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if user and user.role == "STUDENT":
         return RedirectResponse(url="/student")
-    return templates.TemplateResponse("register.html", {"request": request, "user": None})
+    return render_template(request, "register.html", {"user": None})
 
 @router.get("/logout")
 def logout_view():
@@ -106,7 +119,7 @@ def admin_login_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if user and user.role in ["ADMIN", "OFFICER"]:
         return RedirectResponse(url="/admin")
-    return templates.TemplateResponse("admin_login.html", {"request": request, "user": None})
+    return render_template(request, "admin_login.html", {"user": None})
 
 # --- CỔNG HỌC SINH (YÊU CẦU ĐĂNG NHẬP) ---
 @router.get("/student")
@@ -126,8 +139,7 @@ def student_portal(request: Request, db: Session = Depends(get_db)):
         (SupportTicket.user_id == user.id) | (SupportTicket.sender_email == user.email)
     ).order_by(SupportTicket.created_at.desc()).all()
 
-    return templates.TemplateResponse("student_portal.html", {
-        "request": request,
+    return render_template(request, "student_portal.html", {
         "user": user,
         "majors": majors,
         "fees": fees,
@@ -151,8 +163,7 @@ def admin_portal(request: Request, db: Session = Depends(get_db)):
     paid_tx = [t for t in transactions if t.status == 'PAID']
     revenue = sum(t.amount for t in paid_tx)
 
-    return templates.TemplateResponse("admin_portal.html", {
-        "request": request,
+    return render_template(request, "admin_portal.html", {
         "user": user,
         "majors": majors,
         "fees": fees,
@@ -184,8 +195,7 @@ def receipt_page(tx_code: str, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Bảo mật: Bạn không có quyền truy cập biên lai của thí sinh khác!")
 
     major = db.query(Major).filter(Major.id == app.major_id).first()
-    return templates.TemplateResponse("receipt.html", {
-        "request": request,
+    return render_template(request, "receipt.html", {
         "tx": tx,
         "app": app,
         "major": major
