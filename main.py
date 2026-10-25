@@ -39,13 +39,6 @@ app.include_router(finance.router)
 app.include_router(support.router)
 app.include_router(web_views.router)
 
-from fastapi.responses import RedirectResponse
-
-@app.get("/api/index.py", include_in_schema=False)
-@app.get("/api/index", include_in_schema=False)
-def vercel_entry_fallback():
-    return RedirectResponse(url="/", status_code=307)
-
 @app.on_event("startup")
 def seed_demo_data():
     db = SessionLocal()
