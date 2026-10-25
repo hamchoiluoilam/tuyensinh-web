@@ -6,6 +6,7 @@ import os
 
 from ..database import get_db
 from ..models import Major, AdmissionApplication, PaymentTransaction, SupportTicket, FAQItem, FeeConfig, User, Subject
+from .auth import decode_access_token
 
 templates_dir = os.path.join(os.path.dirname(__file__), "..", "templates")
 templates = Jinja2Templates(directory=templates_dir)
@@ -13,12 +14,23 @@ templates = Jinja2Templates(directory=templates_dir)
 router = APIRouter(include_in_schema=False)
 
 def get_current_user(request: Request, db: Session):
+    token = request.cookies.get("auth_token")
+    if token:
+        payload = decode_access_token(token)
+        if payload and "sub" in payload:
+            try:
+                user = db.query(User).filter(User.id == int(payload["sub"])).first()
+                if user:
+                    return user
+            except Exception:
+                pass
+
     user_id = request.cookies.get("user_id")
     if not user_id:
         return None
     try:
         return db.query(User).filter(User.id == int(user_id)).first()
-    except:
+    except Exception:
         return None
 
 # --- TRANG CHỦ & CHI TIẾT NGÀNH ---
@@ -73,6 +85,7 @@ def register_page(request: Request, db: Session = Depends(get_db)):
 @router.get("/logout")
 def logout_view():
     resp = RedirectResponse(url="/")
+    resp.delete_cookie("auth_token")
     resp.delete_cookie("user_id")
     resp.delete_cookie("user_role")
     return resp

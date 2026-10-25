@@ -122,19 +122,29 @@
                                         </td>
                                         <td>
                                             {% if app.status == 'CHO_DUYET' %}
-                                                <span class="badge bg-warning text-dark">Chờ xét duyệt</span>
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Chờ xét duyệt</span>
                                             {% elif app.status == 'HOP_LE' %}
-                                                <span class="badge bg-primary">Hồ sơ Hợp Lệ</span>
+                                                <span class="badge bg-primary"><i class="bi bi-patch-check"></i> Hồ sơ Hợp Lệ</span>
                                             {% elif app.status == 'TRUNG_TUYEN_NV1' %}
                                                 <span class="badge bg-success fw-bold fs-6">TRÚNG TUYỂN NV1 🎉</span>
                                             {% elif app.status == 'TRUNG_TUYEN_NV2' %}
                                                 <span class="badge bg-info text-dark fw-bold fs-6">TRÚNG TUYỂN NV2 🎉</span>
                                             {% elif app.status == 'TRUNG_TUYEN' %}
                                                 <span class="badge bg-success fw-bold fs-6">TRÚNG TUYỂN 🎉</span>
+                                            {% elif app.status == 'DA_NHAP_HOC' %}
+                                                <span class="badge bg-success fw-bold fs-6"><i class="bi bi-mortarboard-fill"></i> ĐÃ NHẬP HỌC</span>
+                                                <div class="small text-success fw-bold mt-1">MSSV: {{ app.student_code }}</div>
+                                            {% elif app.status == 'DA_RUT' %}
+                                                <span class="badge bg-secondary"><i class="bi bi-dash-circle"></i> Đã rút hồ sơ</span>
                                             {% elif app.status == 'KHONG_TRUNG_TUYEN' %}
                                                 <span class="badge bg-danger">Không trúng tuyển</span>
                                             {% else %}
                                                 <span class="badge bg-secondary">{{ app.status }}</span>
+                                            {% endif %}
+                                            {% if app.appeal_status == 'PENDING' %}
+                                            <div class="small mt-1"><span class="badge bg-warning text-dark"><i class="bi bi-clock-history"></i> Đang phúc khảo</span></div>
+                                            {% elif app.appeal_status == 'APPROVED' %}
+                                            <div class="small mt-1"><span class="badge bg-success"><i class="bi bi-check2"></i> Phúc khảo thành công</span></div>
                                             {% endif %}
                                             {% if app.officer_note %}
                                             <div class="small text-danger mt-1"><i class="bi bi-chat-left-dots"></i> {{ app.officer_note }}</div>
@@ -148,20 +158,55 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            {% if not app.payment or app.payment.status != 'PAID' %}
-                                                <button class="btn btn-sm btn-outline-danger fw-bold" onclick="switchToPay('{{ app.app_code }}')">
-                                                    <i class="bi bi-qr-code"></i> Nộp Lệ Phí
-                                                </button>
-                                            {% else %}
-                                                <div class="btn-group btn-group-sm">
-                                                    <button class="btn btn-outline-success" onclick="switchToPay('{{ app.app_code }}')">
-                                                        <i class="bi bi-eye"></i> Chi tiết
+                                            <div class="d-flex flex-column gap-1">
+                                                {% if not app.payment or app.payment.status != 'PAID' %}
+                                                    <button class="btn btn-sm btn-outline-danger fw-bold" onclick="switchToPay('{{ app.app_code }}')">
+                                                        <i class="bi bi-qr-code"></i> Nộp Lệ Phí
                                                     </button>
-                                                    <a href="/receipt/{{ app.payment.tx_code }}" target="_blank" class="btn btn-outline-primary" title="In Phiếu Thu / Biên Lai Điện Tử">
-                                                        <i class="bi bi-printer"></i> In Biên Lai
-                                                    </a>
-                                                </div>
-                                            {% endif %}
+                                                {% else %}
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button class="btn btn-outline-success" onclick="switchToPay('{{ app.app_code }}')">
+                                                            <i class="bi bi-eye"></i> Chi tiết
+                                                        </button>
+                                                        <a href="/receipt/{{ app.payment.tx_code }}" target="_blank" class="btn btn-outline-primary" title="In Phiếu Thu / Biên Lai Điện Tử">
+                                                            <i class="bi bi-printer"></i> Biên lai
+                                                        </a>
+                                                    </div>
+                                                {% endif %}
+
+                                                <!-- Nút Xác nhận nhập học cho thí sinh trúng tuyển -->
+                                                {% if app.status in ['TRUNG_TUYEN_NV1', 'TRUNG_TUYEN_NV2', 'TRUNG_TUYEN'] %}
+                                                    <button class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm" onclick="confirmEnroll('{{ app.id }}', '{{ app.app_code }}', '{{ app.admitted_major_name or app.major.name }}')">
+                                                        <i class="bi bi-mortarboard-fill"></i> Xác Nhận Nhập Học
+                                                    </button>
+                                                {% endif %}
+
+                                                <!-- Nút Xem giấy báo nhập học khi đã nhập học -->
+                                                {% if app.status == 'DA_NHAP_HOC' %}
+                                                    <button class="btn btn-sm btn-info text-white fw-bold text-nowrap" onclick="openCertificateModal('{{ app.app_code }}')">
+                                                        <i class="bi bi-award-fill"></i> Giấy Báo Nhập Học
+                                                    </button>
+                                                {% endif %}
+
+                                                <!-- Nút Sửa / Rút hồ sơ khi còn ở trạng thái CHO_DUYET -->
+                                                {% if app.status == 'CHO_DUYET' %}
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button class="btn btn-outline-warning" onclick="openEditAppModal('{{ app.id }}', '{{ app.app_code }}', {{ app.major_id }}, {{ app.major_nv2_id or 'null' }})">
+                                                            <i class="bi bi-pencil-square"></i> Sửa
+                                                        </button>
+                                                        <button class="btn btn-outline-danger" onclick="confirmWithdraw('{{ app.id }}', '{{ app.app_code }}')">
+                                                            <i class="bi bi-x-circle"></i> Rút
+                                                        </button>
+                                                    </div>
+                                                {% endif %}
+
+                                                <!-- Nút Phúc khảo nếu không trúng tuyển hoặc bị từ chối -->
+                                                {% if app.status in ['TU_CHOI', 'KHONG_TRUNG_TUYEN'] and app.appeal_status != 'PENDING' %}
+                                                    <button class="btn btn-sm btn-outline-danger text-nowrap" onclick="openAppealModal('{{ app.id }}', '{{ app.app_code }}')">
+                                                        <i class="bi bi-patch-question"></i> Nộp Phúc Khảo
+                                                    </button>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -507,9 +552,10 @@
                                 <p class="mb-1"><strong>Mã giao dịch:</strong> <span id="viewTxCode" class="badge bg-secondary"></span></p>
                                 <p class="mb-1"><strong>Thí sinh:</strong> <span id="viewCandidate"></span></p>
                                 <p class="mb-1"><strong>Số tiền:</strong> <span id="viewAmount" class="text-danger fw-bold fs-5">50,000 VNĐ</span></p>
-                                <p class="mb-1"><strong>Ngân hàng thụ hưởng:</strong> <span id="viewBank">VIETCOMBANK</span></p>
-                                <p class="mb-1"><strong>Số tài khoản:</strong> <span id="viewAcc" class="text-primary fw-bold">9999888899</span></p>
-                                <p class="mb-1"><strong>Nội dung CK:</strong> <span id="viewMemo" class="badge bg-warning text-dark"></span></p>
+                                <p class="mb-1"><strong>Ngân hàng thụ hưởng:</strong> <span id="viewBank" class="fw-bold text-primary">MBBank (Ngân hàng TMCP Quân Đội)</span></p>
+                                <p class="mb-1"><strong>Số tài khoản:</strong> <span id="viewAcc" class="text-primary fw-bold fs-5">0915852023</span></p>
+                                <p class="mb-1"><strong>Chủ tài khoản:</strong> <span id="viewHolder" class="text-dark fw-bold">LE THIEN PHU</span></p>
+                                <p class="mb-1"><strong>Nội dung CK:</strong> <span id="viewMemo" class="badge bg-warning text-dark fs-6"></span></p>
                                 <p class="mb-3"><strong>Trạng thái:</strong> <span id="viewPayStatus"></span></p>
 
                                 <div id="btnPayArea" class="d-flex align-items-center gap-2">
@@ -519,9 +565,14 @@
                                 </div>
                             </div>
                             <div class="col-md-5 text-center border-start">
-                                <h6 class="fw-bold text-muted mb-2">Quét mã VietQR chuyển khoản</h6>
-                                <img id="qrImg" src="" alt="VietQR" class="img-fluid rounded border shadow-sm" style="max-height: 220px;">
-                                <div class="small text-muted mt-2">Hỗ trợ tất cả ứng dụng Ngân hàng & ví điện tử</div>
+                                <h6 class="fw-bold text-muted mb-2">Quét mã VietQR chuyển khoản (MBBank)</h6>
+                                <img id="qrImg" src="/static/uploads/my_qr_mb.png" alt="VietQR MBBank" class="img-fluid rounded border shadow-sm mb-2" style="max-height: 220px;" onerror="this.src='/static/uploads/my_qr_mb.png'">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="/static/uploads/my_qr_mb.png" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-qr-code"></i> Xem ảnh QR MB gốc
+                                    </a>
+                                </div>
+                                <div class="small text-muted mt-2">Napas 247: Quét bằng mọi app Ngân hàng & Momo/ZaloPay</div>
                             </div>
                         </div>
                     </div>
@@ -677,6 +728,196 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 1: CHỈNH SỬA HỒ SƠ (KHI CHỜ DUYỆT) -->
+<div class="modal fade" id="editAppModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square"></i> Điều Chỉnh Nguyện Vọng Xét Tuyển</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form onsubmit="handleSaveEditApp(event)">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="edit_appId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mã hồ sơ:</label>
+                        <span id="edit_appCodeBadge" class="badge bg-secondary fs-6"></span>
+                        <div class="small text-muted mt-1">Bạn có thể thay đổi thứ tự ưu tiên hoặc chọn ngành khác khi hồ sơ chưa duyệt.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nguyện vọng 1 (Ưu tiên số 1) (*):</label>
+                        <select id="edit_majorId" class="form-select" required>
+                            {% for m in majors %}
+                            <option value="{{ m.id }}">{{ m.code }} - {{ m.name }} (Chỉ tiêu: {{ m.quota }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nguyện vọng 2 (Tùy chọn):</label>
+                        <select id="edit_majorNv2Id" class="form-select">
+                            <option value="">-- Không đăng ký NV2 --</option>
+                            {% for m in majors %}
+                            <option value="{{ m.id }}">{{ m.code }} - {{ m.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="editAppMsg"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary fw-bold"><i class="bi bi-save"></i> Lưu Thay Đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 2: NỘP ĐƠN PHÚC KHẢO / KHIẾU NẠI ĐIỂM -->
+<div class="modal fade" id="appealModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-patch-question"></i> Đơn Xin Phúc Khảo / Khiếu Nại Điểm</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form onsubmit="handleSaveAppeal(event)">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="appeal_appId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mã hồ sơ:</label>
+                        <span id="appeal_appCodeBadge" class="badge bg-secondary fs-6"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Lý do phúc khảo / khiếu nại (*):</label>
+                        <textarea id="appeal_note" class="form-control" rows="4" required placeholder="Trình bày chi tiết lý do (ví dụ: Điểm môn Toán thi THPT của em thực tế là 9.2 nhưng hồ sơ đang hiển thị 8.2; chứng chỉ IELTS mới được cấp lại...)"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Link / Tài liệu minh chứng bổ sung:</label>
+                        <input type="text" id="appeal_proofUrl" class="form-control" placeholder="Dán link ảnh bảng điểm / chứng chỉ đã tải lên hoặc link Drive">
+                    </div>
+
+                    <div id="appealMsg"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger fw-bold"><i class="bi bi-send-check"></i> Gửi Đơn Phúc Khảo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 3: GIẤY BÁO TRÚNG TUYỂN & XÁC NHẬN NHẬP HỌC ĐIỆN TỬ NEU -->
+<div class="modal fade" id="certificateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white py-3">
+                <h5 class="modal-title fw-bold"><i class="bi bi-award-fill me-2"></i> Giấy Báo Trúng Tuyển & Nhập Học Trực Tuyến</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-white" id="certificatePrintArea">
+                <!-- Header Quốc Gia & Trường -->
+                <div class="text-center pb-3 border-bottom border-2 border-dark mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-6 text-start">
+                            <div class="fw-bold small text-muted">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
+                            <div class="fw-bold fs-6 text-dark">TRƯỜNG ĐẠI HỌC KINH TẾ QUỐC DÂN</div>
+                            <div class="small text-muted">Mã trường: <strong>KHA</strong></div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <div class="fw-bold small">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                            <div class="small fst-italic">Độc lập - Tự do - Hạnh phúc</div>
+                            <div class="small text-muted mt-1">Hà Nội, năm 2026</div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <h4 class="fw-bold text-success text-uppercase mb-1">GIẤY BÁO TRÚNG TUYỂN & NHẬP HỌC ĐẠI HỌC</h4>
+                        <div class="text-muted fw-semibold">HỆ ĐẠI HỌC CHÍNH QUY - NIÊN KHÓA 2026 - 2030 (KHÓA 68)</div>
+                    </div>
+                </div>
+
+                <!-- Thông tin thí sinh trúng tuyển -->
+                <div class="alert alert-success py-2 mb-3 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-check-circle-fill me-1"></i> Trạng thái: <strong>ĐÃ HOÀN TẤT XÁC NHẬN NHẬP HỌC TRỰC TUYẾN</strong></span>
+                    <span id="certCohortBadge" class="badge bg-success fs-6">K68 NEU</span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <strong>Họ và tên thí sinh:</strong>
+                        <div id="certFullName" class="fs-5 fw-bold text-primary"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Số CCCD / CMND:</strong>
+                        <div id="certIdCard" class="fs-5 fw-bold text-dark"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Mã hồ sơ xét tuyển:</strong>
+                        <div><span id="certAppCode" class="badge bg-secondary fs-6"></span></div>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Phương thức xét tuyển:</strong>
+                        <div id="certMethod" class="fw-semibold"></div>
+                    </div>
+                    <div class="col-md-12">
+                        <strong>Ngành trúng tuyển chính thức:</strong>
+                        <div id="certMajor" class="fs-4 fw-bold text-success"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Điểm trúng tuyển:</strong>
+                        <div><span id="certScore" class="badge bg-warning text-dark fs-5"></span></div>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Thời gian xác nhận nhập học:</strong>
+                        <div id="certEnrolledAt" class="fw-semibold text-muted"></div>
+                    </div>
+                </div>
+
+                <!-- Box MSSV & Email Trường Cấp -->
+                <div class="card bg-light border-2 border-primary mb-4 p-3 text-center">
+                    <div class="row">
+                        <div class="col-md-6 border-end">
+                            <div class="text-muted small text-uppercase fw-bold">MÃ SỐ SINH VIÊN (MSSV) CHÍNH THỨC</div>
+                            <div id="certMSSV" class="fs-2 fw-bold text-primary my-1"></div>
+                            <div class="small text-muted">Sử dụng trong suốt quá trình học tập tại NEU</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small text-uppercase fw-bold">EMAIL SINH VIÊN TRƯỜNG CẤP</div>
+                            <div id="certEmail" class="fs-4 fw-bold text-dark my-1"></div>
+                            <div class="small text-muted">Đăng nhập tài khoản Office365 & LMS Đại học</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chân trang & Dấu xác thực điện tử -->
+                <div class="row align-items-center mt-4 pt-3 border-top">
+                    <div class="col-5 text-center">
+                        <img id="certQR" src="" alt="Mã QR Xác Thực" class="img-fluid border p-1 rounded" style="max-height: 120px;">
+                        <div class="small text-muted mt-1">Mã VietQR xác thực hồ sơ số NEU</div>
+                    </div>
+                    <div class="col-7 text-center">
+                        <div class="small text-muted mb-2">HỘI ĐỒNG TUYỂN SINH TRƯỜNG ĐH KINH TẾ QUỐC DÂN</div>
+                        <div class="border border-danger border-2 p-2 rounded d-inline-block text-danger fw-bold">
+                            <i class="bi bi-shield-check fs-4"></i><br>
+                            XÁC THỰC ĐIỆN TỬ CHÍNH THỨC<br>
+                            <span class="small font-monospace">NEU-VERIFIED-2026</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-primary fw-bold" onclick="printCertificate()"><i class="bi bi-printer me-1"></i> In Giấy Báo / Lưu PDF</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
             </div>
         </div>
@@ -1210,6 +1451,9 @@ async function handleFetchPayment() {
         document.getElementById('viewCandidate').textContent = txData.candidate_name;
         document.getElementById('viewAmount').textContent = txData.amount.toLocaleString() + " VNĐ";
         document.getElementById('viewMemo').textContent = txData.memo;
+        if (document.getElementById('viewBank')) document.getElementById('viewBank').textContent = txData.bank_name || 'MBBank (Ngân hàng TMCP Quân Đội)';
+        if (document.getElementById('viewAcc')) document.getElementById('viewAcc').textContent = txData.bank_account || '0915852023';
+        if (document.getElementById('viewHolder')) document.getElementById('viewHolder').textContent = txData.account_holder || 'LE THIEN PHU';
         document.getElementById('qrImg').src = txData.qr_image_url;
 
         updatePaymentStatusBadge(txData.status);
@@ -1285,6 +1529,157 @@ async function handleSendTicket(e) {
     } catch(e) {
         msgBox.innerHTML = `<div class="alert alert-danger">Lỗi khi gửi phiếu hỗ trợ!</div>`;
     }
+}
+
+// --- Sửa nguyện vọng hồ sơ (Gói 1) ---
+let editModalObj = null;
+function openEditAppModal(appId, appCode, curNv1, curNv2) {
+    document.getElementById('edit_appId').value = appId;
+    document.getElementById('edit_appCodeBadge').textContent = appCode;
+    document.getElementById('edit_majorId').value = curNv1;
+    document.getElementById('edit_majorNv2Id').value = curNv2 || "";
+    document.getElementById('editAppMsg').innerHTML = "";
+    editModalObj = new bootstrap.Modal(document.getElementById('editAppModal'));
+    editModalObj.show();
+}
+
+async function handleSaveEditApp(e) {
+    e.preventDefault();
+    const appId = document.getElementById('edit_appId').value;
+    const majorId = parseInt(document.getElementById('edit_majorId').value);
+    const nv2Val = document.getElementById('edit_majorNv2Id').value;
+    const majorNv2Id = nv2Val ? parseInt(nv2Val) : null;
+    const msgBox = document.getElementById('editAppMsg');
+
+    if (majorNv2Id && majorNv2Id === majorId) {
+        msgBox.innerHTML = '<div class="alert alert-danger py-2 mt-2">Nguyện vọng 2 không được trùng với Nguyện vọng 1!</div>';
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/admissions/applications/${appId}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ major_id: majorId, major_nv2_id: majorNv2Id })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            msgBox.innerHTML = `<div class="alert alert-danger py-2 mt-2">${data.detail || 'Lỗi khi cập nhật!'}</div>`;
+            return;
+        }
+        msgBox.innerHTML = '<div class="alert alert-success py-2 mt-2">Đã cập nhật nguyện vọng thành công! Đang tải lại...</div>';
+        setTimeout(() => { location.reload(); }, 1000);
+    } catch(err) {
+        msgBox.innerHTML = '<div class="alert alert-danger py-2 mt-2">Lỗi kết nối máy chủ!</div>';
+    }
+}
+
+// --- Rút hồ sơ xét tuyển (Gói 1) ---
+async function confirmWithdraw(appId, appCode) {
+    if (!confirm(`Bạn có chắc chắn muốn rút hồ sơ [${appCode}] không? Thao tác này sẽ hủy tham gia xét tuyển.`)) {
+        return;
+    }
+    try {
+        const res = await fetch(`/api/admissions/applications/${appId}/withdraw`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.detail || 'Lỗi khi rút hồ sơ!');
+            return;
+        }
+        alert(data.message);
+        location.reload();
+    } catch(e) {
+        alert('Lỗi kết nối khi rút hồ sơ!');
+    }
+}
+
+// --- Nộp đơn phúc khảo hồ sơ (Gói 1) ---
+let appealModalObj = null;
+function openAppealModal(appId, appCode) {
+    document.getElementById('appeal_appId').value = appId;
+    document.getElementById('appeal_appCodeBadge').textContent = appCode;
+    document.getElementById('appeal_note').value = '';
+    document.getElementById('appeal_proofUrl').value = '';
+    document.getElementById('appealMsg').innerHTML = '';
+    appealModalObj = new bootstrap.Modal(document.getElementById('appealModal'));
+    appealModalObj.show();
+}
+
+async function handleSaveAppeal(e) {
+    e.preventDefault();
+    const appId = document.getElementById('appeal_appId').value;
+    const note = document.getElementById('appeal_note').value.trim();
+    const proofUrl = document.getElementById('appeal_proofUrl').value.trim();
+    const msgBox = document.getElementById('appealMsg');
+
+    try {
+        const res = await fetch(`/api/admissions/applications/${appId}/appeal`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ appeal_note: note, appeal_proof_url: proofUrl || null })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            msgBox.innerHTML = `<div class="alert alert-danger py-2 mt-2">${data.detail || 'Lỗi khi gửi đơn!'}</div>`;
+            return;
+        }
+        msgBox.innerHTML = `<div class="alert alert-success py-2 mt-2">${data.message}</div>`;
+        setTimeout(() => { location.reload(); }, 1200);
+    } catch(err) {
+        msgBox.innerHTML = '<div class="alert alert-danger py-2 mt-2">Lỗi kết nối máy chủ!</div>';
+    }
+}
+
+// --- Hậu tuyển sinh: Xác nhận nhập học & Cấp MSSV (Gói 2) ---
+async function confirmEnroll(appId, appCode, majorName) {
+    if (!confirm(`XÁC NHẬN NHẬP HỌC TRỰC TUYẾN:\nBạn có chắc chắn muốn xác nhận nhập học chính thức vào ngành [${majorName}] không?\nHệ thống sẽ cấp Mã số Sinh viên (MSSV) và Email chính thức của trường.`)) {
+        return;
+    }
+    try {
+        const res = await fetch(`/api/admissions/applications/${appId}/enroll`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.detail || 'Lỗi khi xác nhận nhập học!');
+            return;
+        }
+        alert(`Chúc mừng! Bạn đã hoàn tất xác nhận nhập học trực tuyến!\nMSSV chính thức: ${data.student_code}\nEmail: ${data.student_email}`);
+        openCertificateModal(appCode);
+    } catch(e) {
+        alert('Lỗi kết nối khi xác nhận nhập học!');
+    }
+}
+
+// --- Xem Giấy Báo Nhập Học Điện Tử NEU (Gói 2) ---
+let certModalObj = null;
+async function openCertificateModal(appCode) {
+    try {
+        const res = await fetch(`/api/admissions/certificate/${encodeURIComponent(appCode)}`);
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.detail || 'Lỗi khi tải giấy báo trúng tuyển!');
+            return;
+        }
+
+        document.getElementById('certFullName').textContent = data.full_name;
+        document.getElementById('certIdCard').textContent = data.id_card;
+        document.getElementById('certAppCode').textContent = data.app_code;
+        document.getElementById('certMethod').textContent = data.admitted_method;
+        document.getElementById('certMajor').textContent = data.admitted_major_name + ' (Mã: ' + data.admitted_major_code + ')';
+        document.getElementById('certScore').textContent = data.score + ' điểm';
+        document.getElementById('certEnrolledAt').textContent = data.enrolled_at;
+        document.getElementById('certMSSV').textContent = data.student_code;
+        document.getElementById('certEmail').textContent = data.student_email;
+        document.getElementById('certQR').src = data.verification_qr;
+
+        certModalObj = new bootstrap.Modal(document.getElementById('certificateModal'));
+        certModalObj.show();
+    } catch(e) {
+        alert('Lỗi khi tải thông tin giấy báo nhập học!');
+    }
+}
+
+function printCertificate() {
+    window.print();
 }
 </script>
 {% endblock %}

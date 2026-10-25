@@ -285,10 +285,22 @@
                                     <span class="badge bg-info text-dark fw-bold">TRÚNG TUYỂN NV2</span>
                                 {% elif app.status == 'TRUNG_TUYEN' %}
                                     <span class="badge bg-success fw-bold">TRÚNG TUYỂN</span>
+                                {% elif app.status == 'DA_NHAP_HOC' %}
+                                    <span class="badge bg-success fw-bold"><i class="bi bi-mortarboard-fill"></i> ĐÃ NHẬP HỌC</span>
+                                    {% if app.student_code %}
+                                    <div class="small text-success fw-bold">MSSV: {{ app.student_code }}</div>
+                                    {% endif %}
+                                {% elif app.status == 'DA_RUT' %}
+                                    <span class="badge bg-secondary"><i class="bi bi-dash-circle"></i> Đã rút hồ sơ</span>
                                 {% elif app.status == 'KHONG_TRUNG_TUYEN' %}
                                     <span class="badge bg-secondary">Không Trúng Tuyển</span>
                                 {% else %}
                                     <span class="badge bg-dark">{{ app.status }}</span>
+                                {% endif %}
+                                {% if app.appeal_status == 'PENDING' %}
+                                <div class="mt-1"><span class="badge bg-warning text-dark"><i class="bi bi-patch-question"></i> Đang nộp phúc khảo</span></div>
+                                {% elif app.appeal_status == 'APPROVED' %}
+                                <div class="mt-1"><span class="badge bg-success"><i class="bi bi-check2"></i> Phúc khảo được duyệt</span></div>
                                 {% endif %}
                                 {% if app.officer_note %}
                                 <div class="small text-muted mt-1 fst-italic" title="{{ app.officer_note }}"><i class="bi bi-chat-left-dots text-danger"></i> {{ app.officer_note[:25] }}...</div>
@@ -587,6 +599,9 @@
                                 <option value="HOP_LE">Hợp Lệ (Đủ điều kiện xét trúng tuyển)</option>
                                 <option value="TU_CHOI">Từ Chối (Hồ sơ sai lệch / Không hợp lệ)</option>
                                 <option value="CHO_DUYET">Chờ Bổ Sung / Xét Thêm</option>
+                                <option value="TRUNG_TUYEN_NV1">Xét Đặc Cách Trúng Tuyển NV1</option>
+                                <option value="DA_NHAP_HOC">Xác Nhận Đã Nhập Học</option>
+                                <option value="DA_RUT">Xác Nhận Rút Hồ Sơ</option>
                             </select>
                         </div>
                         <div class="col-md-6">

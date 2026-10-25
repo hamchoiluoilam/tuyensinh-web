@@ -15,6 +15,14 @@ class User(Base):
     full_name = Column(String(150), nullable=False)
     phone = Column(String(20), nullable=True)
     role = Column(String(20), default="STUDENT") # STUDENT (Thí sinh), OFFICER (Cán bộ tuyển sinh), ADMIN (Quản trị toàn quyền)
+    # Hậu tuyển sinh (Post-admission enrollment) & Phúc khảo hồ sơ
+    student_code = Column(String(30), nullable=True) # Mã số sinh viên chính thức (MSSV)
+    student_email = Column(String(120), nullable=True) # Email sinh viên NEU cấp: {mssv}@st.neu.edu.vn
+    enrolled_at = Column(DateTime, nullable=True) # Thời điểm xác nhận nhập học trực tuyến
+    appeal_note = Column(Text, nullable=True) # Nội dung đơn xin phúc khảo hồ sơ / khiếu nại điểm
+    appeal_proof_url = Column(Text, nullable=True) # Minh chứng nộp phúc khảo
+    appeal_status = Column(String(30), nullable=True) # PENDING, APPROVED, REJECTED
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     applications = relationship("AdmissionApplication", back_populates="user")
@@ -85,6 +93,13 @@ class AdmissionApplication(Base):
     user = relationship("User", back_populates="applications")
 
     status = Column(String(50), default="CHO_DUYET") 
+    # Hậu tuyển sinh (MSSV & Email) & Phúc khảo
+    student_code = Column(String(30), nullable=True)
+    student_email = Column(String(120), nullable=True)
+    enrolled_at = Column(DateTime, nullable=True)
+    appeal_note = Column(Text, nullable=True)
+    appeal_proof_url = Column(Text, nullable=True)
+    appeal_status = Column(String(30), nullable=True)
     # Trạng thái: CHO_DUYET, HOP_LE, TU_CHOI, TRUNG_TUYEN_NV1, TRUNG_TUYEN_NV2, KHONG_TRUNG_TUYEN
     officer_note = Column(Text, nullable=True) # Ghi chú của cán bộ tuyển sinh khi duyệt hồ sơ
     

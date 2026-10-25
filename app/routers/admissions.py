@@ -11,7 +11,8 @@ from ..models import Major, AdmissionApplication, PaymentTransaction, Subject, U
 from ..schemas import (
     MajorOut, MajorDetailOut, MajorUpdateQuota,
     ApplicationCreate, ApplicationOut, ApplicationStatusUpdate,
-    PublicVerifyLookupRequest, PublicVerifyLookupOut
+    PublicVerifyLookupRequest, PublicVerifyLookupOut,
+    ApplicationUpdate, ApplicationAppealRequest, ApplicationAppealReview
 )
 from .auth import get_current_user_from_req
 
@@ -380,4 +381,220 @@ def run_virtual_filtering(major_id: int, request: Request, db: Session = Depends
         "total_eligible": len(all_eligible),
         "passed_count": len(passed),
         "benchmark_score": benchmark
+    }
+
+@router.put("/applications/{app_id}", response_model=ApplicationOut)
+def update_application(app_id: int, data: ApplicationUpdate, request: Request, db: Session = Depends(get_db)):
+    """[Thí sinh] Chỉnh sửa thông tin hồ sơ (Chỉ khả dụng khi hồ sơ ở trạng thái CHO_DUYET)"""
+    app = db.query(AdmissionApplication).filter(AdmissionApplication.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ!")
+
+    curr_user = get_current_user_from_req(request, db)
+    if curr_user and curr_user.role == "STUDENT":
+        if app.user_id != curr_user.id and app.email != curr_user.email:
+            raise HTTPException(status_code=403, detail="Bảo mật: Bạn không có quyền chỉnh sửa hồ sơ này!")
+
+    if app.status != "CHO_DUYET":
+        raise HTTPException(status_code=400, detail=f"Hồ sơ đã ở trạng thái [{app.status}], không thể tự ý chỉnh sửa! Vui lòng liên hệ ban tuyển sinh hoặc nộp đơn phúc khảo.")
+
+    if data.major_id is not None:
+        major = db.query(Major).filter(Major.id == data.major_id).first()
+        if not major:
+            raise HTTPException(status_code=404, detail="Ngành NV1 không tồn tại!")
+        app.major_id = data.major_id
+
+    if data.major_nv2_id is not None:
+        if data.major_nv2_id == app.major_id:
+            raise HTTPException(status_code=400, detail="Nguyện vọng 2 không được trùng với Nguyện vọng 1!")
+        app.major_nv2_id = data.major_nv2_id
+
+    if data.method is not None:
+        app.method = data.method
+    if data.method_code is not None:
+        app.method_code = data.method_code
+    if data.method_name is not None:
+        app.method_name = data.method_name
+    if data.subject_combination is not None:
+        app.subject_combination = data.subject_combination
+    if data.priority_area is not None:
+        app.priority_area = data.priority_area
+    if data.priority_score is not None:
+        app.priority_score = data.priority_score
+    if data.score_details is not None:
+        app.score_details = data.score_details
+    if data.score is not None:
+        app.score = data.score
+    if data.proof_url is not None:
+        app.proof_url = data.proof_url
+
+    db.commit()
+    db.refresh(app)
+    return app
+
+@router.post("/applications/{app_id}/withdraw")
+def withdraw_application(app_id: int, request: Request, db: Session = Depends(get_db)):
+    """[Thí sinh] Rút / Hủy hồ sơ xét tuyển"""
+    app = db.query(AdmissionApplication).filter(AdmissionApplication.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ!")
+
+    curr_user = get_current_user_from_req(request, db)
+    if curr_user and curr_user.role == "STUDENT":
+        if app.user_id != curr_user.id and app.email != curr_user.email:
+            raise HTTPException(status_code=403, detail="Bảo mật: Bạn không có quyền thao tác trên hồ sơ này!")
+
+    if app.status in ["DA_RUT", "HUY_HO_SO"]:
+        return {"message": "Hồ sơ đã được rút trước đó rồi!", "status": app.status}
+
+    if app.status == "DA_NHAP_HOC":
+        raise HTTPException(status_code=400, detail="Thí sinh đã xác nhận nhập học chính thức, không thể tự rút hồ sơ trực tuyến. Vui lòng liên hệ Phòng Đào tạo NEU!")
+
+    app.status = "DA_RUT"
+    app.officer_note = (app.officer_note or "") + " [Thí sinh chủ động rút hồ sơ xét tuyển]"
+    db.commit()
+
+    return {"message": f"Đã rút thành công hồ sơ {app.app_code}!", "status": "DA_RUT"}
+
+@router.post("/applications/{app_id}/appeal")
+def submit_appeal(app_id: int, data: ApplicationAppealRequest, request: Request, db: Session = Depends(get_db)):
+    """[Thí sinh] Nộp đơn xin phúc khảo hồ sơ / khiếu nại kết quả xét tuyển"""
+    app = db.query(AdmissionApplication).filter(AdmissionApplication.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ!")
+
+    curr_user = get_current_user_from_req(request, db)
+    if curr_user and curr_user.role == "STUDENT":
+        if app.user_id != curr_user.id and app.email != curr_user.email:
+            raise HTTPException(status_code=403, detail="Bảo mật: Bạn không có quyền gửi đơn phúc khảo cho hồ sơ này!")
+
+    app.appeal_note = data.appeal_note
+    if data.appeal_proof_url:
+        app.appeal_proof_url = data.appeal_proof_url
+    app.appeal_status = "PENDING"
+    db.commit()
+
+    return {
+        "message": f"Nộp đơn phúc khảo cho hồ sơ {app.app_code} thành công! Hội đồng tuyển sinh sẽ thụ lý hồ sơ của bạn.",
+        "appeal_status": "PENDING"
+    }
+
+@router.post("/applications/{app_id}/review-appeal")
+def review_appeal(app_id: int, data: ApplicationAppealReview, request: Request, db: Session = Depends(get_db)):
+    """[Cán bộ / Admin] Xử lý & trả lời kết quả phúc khảo"""
+    curr_user = get_current_user_from_req(request, db)
+    if curr_user and curr_user.role not in ["ADMIN", "OFFICER"]:
+        raise HTTPException(status_code=403, detail="Chỉ Cán bộ tuyển sinh hoặc Admin mới có quyền xét duyệt phúc khảo!")
+
+    app = db.query(AdmissionApplication).filter(AdmissionApplication.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ!")
+
+    app.appeal_status = data.appeal_status
+    if data.officer_note:
+        app.officer_note = data.officer_note
+    if data.new_score is not None:
+        app.score = data.new_score
+    if data.new_status:
+        app.status = data.new_status
+
+    db.commit()
+    return {
+        "message": f"Đã hoàn tất xử lý phúc khảo cho hồ sơ {app.app_code}!",
+        "appeal_status": app.appeal_status,
+        "status": app.status,
+        "score": app.score
+    }
+
+@router.post("/applications/{app_id}/enroll")
+def confirm_enrollment(app_id: int, request: Request, db: Session = Depends(get_db)):
+    """
+    [Hậu tuyển sinh] Xác nhận nhập học trực tuyến & Cấp Mã số Sinh viên (MSSV) + Email trường
+    Áp dụng cho thí sinh có trạng thái TRUNG_TUYEN_NV1, TRUNG_TUYEN_NV2, hoặc TRUNG_TUYEN
+    """
+    app = db.query(AdmissionApplication).filter(AdmissionApplication.id == app_id).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ!")
+
+    curr_user = get_current_user_from_req(request, db)
+    if curr_user and curr_user.role == "STUDENT":
+        if app.user_id != curr_user.id and app.email != curr_user.email:
+            raise HTTPException(status_code=403, detail="Bảo mật: Bạn không có quyền xác nhận nhập học cho hồ sơ này!")
+
+    admitted_statuses = ["TRUNG_TUYEN_NV1", "TRUNG_TUYEN_NV2", "TRUNG_TUYEN"]
+    if app.status not in admitted_statuses and app.status != "DA_NHAP_HOC":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Hồ sơ hiện tại (trạng thái: {app.status}) chưa đủ điều kiện trúng tuyển để xác nhận nhập học!"
+        )
+
+    if app.status == "DA_NHAP_HOC" and app.student_code:
+        return {
+            "message": "Thí sinh đã hoàn tất xác nhận nhập học trực tuyến!",
+            "student_code": app.student_code,
+            "student_email": app.student_email,
+            "enrolled_at": app.enrolled_at,
+            "admitted_major": app.admitted_major_name or app.major.name,
+            "cohort": "K68 (Niên khóa 2026 - 2030)"
+        }
+
+    target_major = app.major
+    if app.status == "TRUNG_TUYEN_NV2" and app.major_nv2:
+        target_major = app.major_nv2
+
+    major_suffix = target_major.code.replace("7", "", 1)[:4] if len(target_major.code) >= 5 else "9999"
+    seq = 1000 + (app.id % 9000)
+    student_code = f"26{major_suffix}{seq}"
+    student_email = f"{student_code}@st.neu.edu.vn"
+
+    app.status = "DA_NHAP_HOC"
+    app.student_code = student_code
+    app.student_email = student_email
+    app.enrolled_at = datetime.datetime.utcnow()
+    db.commit()
+
+    return {
+        "message": "Chúc mừng bạn đã hoàn tất thủ tục xác nhận nhập học trực tuyến thành công!",
+        "student_code": student_code,
+        "student_email": student_email,
+        "enrolled_at": app.enrolled_at,
+        "admitted_major": app.admitted_major_name or target_major.name,
+        "cohort": "K68 (Niên khóa 2026 - 2030)"
+    }
+
+@router.get("/certificate/{app_code}")
+def get_admission_certificate(app_code: str, db: Session = Depends(get_db)):
+    """[Giấy Báo Trúng Tuyển & Nhập Học Điện Tử] Tra cứu giấy chứng nhận điện tử trúng tuyển NEU có dấu xác thực"""
+    app = db.query(AdmissionApplication).filter(AdmissionApplication.app_code == app_code).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ!")
+
+    if app.status not in ["TRUNG_TUYEN_NV1", "TRUNG_TUYEN_NV2", "TRUNG_TUYEN", "DA_NHAP_HOC"]:
+        raise HTTPException(status_code=400, detail="Hồ sơ chưa đạt kết quả trúng tuyển chính thức để cấp Giấy báo nhập học!")
+
+    admitted_major = app.major
+    if app.status == "TRUNG_TUYEN_NV2" and app.major_nv2:
+        admitted_major = app.major_nv2
+
+    verify_url = f"https://tuyensinh.neu.edu.vn/api/admissions/certificate/{app.app_code}"
+    verify_qr = f"https://img.vietqr.io/image/MB-0915852023-compact2.png?amount=0&addInfo=VERIFY-{app.app_code}&accountName=LE%20THIEN%20PHU"
+
+    return {
+        "app_code": app.app_code,
+        "full_name": app.full_name,
+        "id_card": app.id_card,
+        "email": app.email,
+        "phone": app.phone,
+        "admitted_major_name": admitted_major.name,
+        "admitted_major_code": admitted_major.code,
+        "admitted_method": app.method_name or app.method,
+        "score": app.score,
+        "status": app.status,
+        "student_code": app.student_code or "CHƯA_CẤP",
+        "student_email": app.student_email or "---",
+        "enrolled_at": app.enrolled_at.strftime("%H:%M ngày %d/%m/%Y") if app.enrolled_at else "Chưa xác nhận",
+        "cohort": "K68 (Khóa 2026 - 2030)",
+        "university": "TRƯỜNG ĐẠI HỌC KINH TẾ QUỐC DÂN (NEU)",
+        "verification_url": verify_url,
+        "verification_qr": verify_qr
     }

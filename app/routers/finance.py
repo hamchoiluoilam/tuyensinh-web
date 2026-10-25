@@ -1,4 +1,5 @@
 import datetime
+import re
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -6,10 +7,15 @@ from typing import List, Optional
 
 from ..database import get_db
 from ..models import FeeConfig, PaymentTransaction, AdmissionApplication
-from ..schemas import PaymentOut, FeeConfigUpdate
+from ..schemas import PaymentOut, FeeConfigUpdate, WebhookIPNPayload
 from .auth import get_current_user_from_req
 
 router = APIRouter(prefix="/api/finance", tags=["M07 - Tài chính kế toán (Người 2)"])
+
+DEFAULT_BANK_NAME = "MBBank (Ngân hàng TMCP Quân Đội)"
+DEFAULT_BANK_ACCOUNT = "0915852023"
+DEFAULT_ACCOUNT_HOLDER = "LE THIEN PHU"
+FALLBACK_QR_URL = "/static/uploads/my_qr_mb.png"
 
 @router.get("/fee-configs")
 def get_fee_configs(db: Session = Depends(get_db)):
@@ -44,17 +50,15 @@ def list_transactions(status: Optional[str] = None, db: Session = Depends(get_db
 
 @router.get("/transaction/{tx_code}")
 def get_transaction_by_code(tx_code: str, db: Session = Depends(get_db)):
-    """Tra cứu chi tiết một giao dịch thanh toán kèm mã QR và thông tin biên lai"""
+    """Tra cứu chi tiết một giao dịch thanh toán kèm mã VietQR MBBank động và mã QR thực tế"""
     tx = db.query(PaymentTransaction).filter(PaymentTransaction.tx_code == tx_code).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Không tìm thấy giao dịch thanh toán!")
 
     app = tx.application
-    bank_account = "9999888899"
-    bank_name = "VIETCOMBANK"
     amount = int(tx.amount)
     memo = tx.tx_code
-    vietqr_url = f"https://api.vietqr.io/image/970436-{bank_account}-compact.jpg?amount={amount}&addInfo={memo}"
+    vietqr_url = f"https://img.vietqr.io/image/MB-{DEFAULT_BANK_ACCOUNT}-compact2.png?amount={amount}&addInfo={memo}&accountName=LE%20THIEN%20PHU"
 
     return {
         "tx_code": tx.tx_code,
@@ -67,10 +71,12 @@ def get_transaction_by_code(tx_code: str, db: Session = Depends(get_db)):
         "id_card": app.id_card if app else "",
         "app_code": app.app_code if app else "",
         "major_name": app.major.name if (app and app.major) else "",
-        "bank_account": bank_account,
-        "bank_name": bank_name,
+        "bank_account": DEFAULT_BANK_ACCOUNT,
+        "bank_name": DEFAULT_BANK_NAME,
+        "account_holder": DEFAULT_ACCOUNT_HOLDER,
         "memo": memo,
-        "qr_image_url": vietqr_url
+        "qr_image_url": vietqr_url,
+        "fallback_qr_url": FALLBACK_QR_URL
     }
 
 @router.post("/simulate-pay/{tx_code}")
@@ -94,6 +100,38 @@ def simulate_payment(tx_code: str, db: Session = Depends(get_db)):
         "message": f"Thanh toán thành công {tx.amount:,.0f} VNĐ cho hồ sơ!",
         "tx_code": tx.tx_code,
         "status": tx.status,
+        "paid_at": tx.paid_at
+    }
+
+@router.post("/webhook-ipn")
+def webhook_ipn(payload: WebhookIPNPayload, db: Session = Depends(get_db)):
+    """
+    [Webhook Thanh toán Tự Động - IPN Auto Reconcile]
+    Lắng nghe thông báo biến động số dư từ ngân hàng (MBBank / SePay / VietQR Gateway).
+    Tự động quét mã memo (PAY-TS2026-XXXX) và gạch nợ tự động trong 0.5s.
+    """
+    search_text = f"{payload.content or ''} {payload.description or ''} {payload.memo or ''}".strip().upper()
+    match = re.search(r"(PAY-TS2026-[A-Z0-9]+|PAY-[A-Z0-9]+)", search_text)
+    if not match:
+        raise HTTPException(status_code=400, detail="Không tìm thấy mã giao dịch hợp lệ (dạng PAY-TS2026-XXXX) trong nội dung chuyển khoản!")
+
+    tx_code = match.group(1)
+    tx = db.query(PaymentTransaction).filter(PaymentTransaction.tx_code == tx_code).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy giao dịch {tx_code} trên hệ thống!")
+
+    if tx.status == "PAID":
+        return {"success": True, "message": "Giao dịch đã được thanh toán trước đó!", "tx_code": tx.tx_code}
+
+    tx.status = "PAID"
+    tx.paid_at = datetime.datetime.utcnow()
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Đối soát tự động thành công! Đã ghi nhận lệ phí cho hồ sơ {tx.application.app_code if tx.application else ''}.",
+        "tx_code": tx.tx_code,
+        "amount": tx.amount,
         "paid_at": tx.paid_at
     }
 
@@ -122,6 +160,9 @@ def get_payment_receipt(tx_code: str, request: Request, db: Session = Depends(ge
         "amount": tx.amount,
         "paid_at": tx.paid_at.strftime("%H:%M:%S ngày %d/%m/%Y") if tx.paid_at else "---",
         "method": tx.method,
+        "bank_name": DEFAULT_BANK_NAME,
+        "bank_account": DEFAULT_BANK_ACCOUNT,
+        "account_holder": DEFAULT_ACCOUNT_HOLDER,
         "status": "ĐÃ XÁC NHẬN NỘP ĐỦ LỆ PHÍ"
     }
 

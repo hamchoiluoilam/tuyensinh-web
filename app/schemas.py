@@ -129,10 +129,39 @@ class ApplicationOut(BaseModel):
     admitted_major_name: Optional[str] = None
     user_id: Optional[int] = None
     proof_url: Optional[str] = None
+    student_code: Optional[str] = None
+    student_email: Optional[str] = None
+    enrolled_at: Optional[datetime] = None
+    appeal_note: Optional[str] = None
+    appeal_proof_url: Optional[str] = None
+    appeal_status: Optional[str] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+class ApplicationUpdate(BaseModel):
+    major_id: Optional[int] = None
+    major_nv2_id: Optional[int] = None
+    method: Optional[str] = None
+    method_code: Optional[str] = None
+    method_name: Optional[str] = None
+    subject_combination: Optional[str] = None
+    priority_area: Optional[str] = None
+    priority_score: Optional[float] = None
+    score_details: Optional[str] = None
+    score: Optional[float] = None
+    proof_url: Optional[str] = None
+
+class ApplicationAppealRequest(BaseModel):
+    appeal_note: str
+    appeal_proof_url: Optional[str] = None
+
+class ApplicationAppealReview(BaseModel):
+    appeal_status: str # APPROVED, REJECTED
+    officer_note: Optional[str] = None
+    new_score: Optional[float] = None
+    new_status: Optional[str] = None
 
 
 # ==================== M07 FINANCE SCHEMAS ====================
@@ -147,6 +176,15 @@ class FeeConfigUpdate(BaseModel):
 
 class PaymentSimulate(BaseModel):
     tx_code: str
+
+class WebhookIPNPayload(BaseModel):
+    content: Optional[str] = None
+    description: Optional[str] = None
+    memo: Optional[str] = None
+    amount: Optional[float] = None
+    account_number: Optional[str] = None
+    bank_code: Optional[str] = None
+    transaction_id: Optional[str] = None
 
 class PaymentOut(BaseModel):
     id: int
