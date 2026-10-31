@@ -1520,7 +1520,6 @@ function updatePaymentStatusBadge(status) {
         `;
     }
 }
-
 async function simulatePay() {
     if (!currentTxCode) return;
     try {
@@ -1533,7 +1532,6 @@ async function simulatePay() {
         alert("Lỗi khi giả lập thanh toán!");
     }
 }
-
 // --- Ticket hỗ trợ (M12) ---
 async function handleSendTicket(e) {
     e.preventDefault();
@@ -1566,7 +1564,6 @@ async function handleSendTicket(e) {
         msgBox.innerHTML = `<div class="alert alert-danger">Lỗi khi gửi phiếu hỗ trợ!</div>`;
     }
 }
-
 // --- Sửa nguyện vọng hồ sơ (Gói 1) ---
 let editModalObj = null;
 function openEditAppModal(appId, appCode, curNv1, curNv2) {
@@ -1591,7 +1588,6 @@ async function handleSaveEditApp(e) {
         msgBox.innerHTML = '<div class="alert alert-danger py-2 mt-2">Nguyện vọng 2 không được trùng với Nguyện vọng 1!</div>';
         return;
     }
-
     try {
         const res = await fetch(`/api/admissions/applications/${appId}`, {
             method: 'PUT',
@@ -1609,7 +1605,6 @@ async function handleSaveEditApp(e) {
         msgBox.innerHTML = '<div class="alert alert-danger py-2 mt-2">Lỗi kết nối máy chủ!</div>';
     }
 }
-
 // --- Rút hồ sơ xét tuyển (Gói 1) ---
 async function confirmWithdraw(appId, appCode) {
     if (!confirm(`Bạn có chắc chắn muốn rút hồ sơ [${appCode}] không? Thao tác này sẽ hủy tham gia xét tuyển.`)) {
@@ -1628,7 +1623,6 @@ async function confirmWithdraw(appId, appCode) {
         alert('Lỗi kết nối khi rút hồ sơ!');
     }
 }
-
 // --- Nộp đơn phúc khảo hồ sơ (Gói 1) ---
 let appealModalObj = null;
 function openAppealModal(appId, appCode) {
@@ -1640,14 +1634,12 @@ function openAppealModal(appId, appCode) {
     appealModalObj = new bootstrap.Modal(document.getElementById('appealModal'));
     appealModalObj.show();
 }
-
 async function handleSaveAppeal(e) {
     e.preventDefault();
     const appId = document.getElementById('appeal_appId').value;
     const note = document.getElementById('appeal_note').value.trim();
     const proofUrl = document.getElementById('appeal_proofUrl').value.trim();
     const msgBox = document.getElementById('appealMsg');
-
     try {
         const res = await fetch(`/api/admissions/applications/${appId}/appeal`, {
             method: 'POST',
@@ -1665,7 +1657,6 @@ async function handleSaveAppeal(e) {
         msgBox.innerHTML = '<div class="alert alert-danger py-2 mt-2">Lỗi kết nối máy chủ!</div>';
     }
 }
-
 // --- Hậu tuyển sinh: Xác nhận nhập học & Cấp MSSV (Gói 2) ---
 async function confirmEnroll(appId, appCode, majorName) {
     if (!confirm(`XÁC NHẬN NHẬP HỌC TRỰC TUYẾN:\nBạn có chắc chắn muốn xác nhận nhập học chính thức vào ngành [${majorName}] không?\nHệ thống sẽ cấp Mã số Sinh viên (MSSV) và Email chính thức của trường.`)) {
@@ -1684,7 +1675,6 @@ async function confirmEnroll(appId, appCode, majorName) {
         alert('Lỗi kết nối khi xác nhận nhập học!');
     }
 }
-
 // --- Xem Giấy Báo Nhập Học Điện Tử NEU (Gói 2) ---
 let certModalObj = null;
 async function openCertificateModal(appCode) {
@@ -1695,7 +1685,6 @@ async function openCertificateModal(appCode) {
             alert(data.detail || 'Lỗi khi tải giấy báo trúng tuyển!');
             return;
         }
-
         document.getElementById('certFullName').textContent = data.full_name;
         document.getElementById('certIdCard').textContent = data.id_card;
         document.getElementById('certAppCode').textContent = data.app_code;
@@ -1713,7 +1702,6 @@ async function openCertificateModal(appCode) {
         alert('Lỗi khi tải thông tin giấy báo nhập học!');
     }
 }
-
 function printCertificate() {
     window.print();
 }

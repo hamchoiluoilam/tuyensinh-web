@@ -1,13 +1,12 @@
+
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import os
-
 from ..database import get_db
 from ..models import Major, AdmissionApplication, PaymentTransaction, SupportTicket, FAQItem, FeeConfig, User, Subject
 from .auth import decode_access_token
-
 templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "templates")
 if not os.path.exists(templates_dir):
     for candidate in [
@@ -19,9 +18,7 @@ if not os.path.exists(templates_dir):
         if os.path.exists(candidate):
             templates_dir = candidate
             break
-
 templates = Jinja2Templates(directory=templates_dir)
-
 def render_template(request: Request, name: str, context: dict):
     """
     Hàm render template tương thích 100% với mọi phiên bản Starlette/FastAPI:
@@ -35,9 +32,7 @@ def render_template(request: Request, name: str, context: dict):
         return templates.TemplateResponse(request=request, name=name, context=ctx)
     except TypeError:
         return templates.TemplateResponse(name, ctx)
-
 router = APIRouter(include_in_schema=False)
-
 def get_current_user(request: Request, db: Session):
     token = request.cookies.get("auth_token")
     if token:
@@ -49,7 +44,6 @@ def get_current_user(request: Request, db: Session):
                     return user
             except Exception:
                 pass
-
     user_id = request.cookies.get("user_id")
     if not user_id:
         return None
@@ -57,7 +51,6 @@ def get_current_user(request: Request, db: Session):
         return db.query(User).filter(User.id == int(user_id)).first()
     except Exception:
         return None
-
 # --- TRANG CHỦ & CHI TIẾT NGÀNH ---
 @router.get("/")
 def home_page(request: Request, db: Session = Depends(get_db)):
@@ -72,7 +65,6 @@ def home_page(request: Request, db: Session = Depends(get_db)):
         "faqs": faqs,
         "total_subjects": total_subjects
     })
-
 @router.get("/majors/{major_id}")
 def major_detail_page(major_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
@@ -89,8 +81,6 @@ def major_detail_page(major_id: int, request: Request, db: Session = Depends(get
         "subjects": subjects,
         "total_credits": total_credits
     })
-
-# --- ĐĂNG NHẬP / ĐĂNG KÝ HỌC SINH ---
 @router.get("/login")
 def login_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
@@ -112,7 +102,6 @@ def logout_view():
     resp.delete_cookie("user_id")
     resp.delete_cookie("user_role")
     return resp
-
 # --- ĐĂNG NHẬP ADMIN & CÁN BỘ ---
 @router.get("/admin/login")
 def admin_login_page(request: Request, db: Session = Depends(get_db)):
@@ -200,7 +189,6 @@ def receipt_page(tx_code: str, request: Request, db: Session = Depends(get_db)):
         "app": app,
         "major": major
     })
-
 # --- FILE SWAGGER UI RIÊNG & TÀI LIỆU OPENAPI ---
 @router.get("/swagger-ui")
 def custom_swagger_ui():
